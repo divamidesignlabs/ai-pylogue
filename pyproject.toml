@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylogue"
-version = "0.3.41"
+version = "0.3.42"
 description = "A Chatbot UI built for AI agents"
 readme = "README.rst"
 authors = [
