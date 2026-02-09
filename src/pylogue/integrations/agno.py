@@ -13,9 +13,11 @@ from .common import (
     format_tool_status_running as _format_tool_status_running,
     get_export_state as _get_export_state_common,
     load_prompt_state as _load_prompt_state_common,
+    resolve_tool_canvas_actions as _resolve_tool_canvas_actions,
     resolve_tool_html as _resolve_tool_html,
     sanitize_history_answer as _sanitize_history_answer,
     should_render_tool_result_raw as _should_render_tool_result_raw,
+    wrap_tool_canvas_actions as _wrap_tool_canvas_actions,
     wrap_tool_html as _wrap_tool_html,
 )
 
@@ -348,7 +350,10 @@ class AgnoResponder:
                         yield _format_tool_result_summary(tool_name, args, result)
                     if not self.show_tool_details:
                         yield _format_tool_status_done(args, resolved_call_id)
+                    resolved_canvas_actions = _resolve_tool_canvas_actions(result)
                     resolved_html = _resolve_tool_html(result)
+                    if resolved_canvas_actions:
+                        yield _wrap_tool_canvas_actions(resolved_canvas_actions)
                     if resolved_html:
                         yield _wrap_tool_html(resolved_html)
                     elif _should_render_tool_result_raw(tool_name, result):

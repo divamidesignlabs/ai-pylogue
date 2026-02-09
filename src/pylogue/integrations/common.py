@@ -2,6 +2,7 @@ import html
 import json
 import re
 import ast
+import base64
 from typing import Any, Optional
 
 PYLOGUE_INSTRUCTIONS = (
@@ -18,6 +19,7 @@ PYLOGUE_INSTRUCTIONS = (
 )
 
 _TOOL_HTML_RE = re.compile(r'<div class="tool-html">.*?</div>', re.DOTALL)
+_TOOL_CANVAS_RE = re.compile(r'<div class="tool-canvas-actions".*?</div>', re.DOTALL)
 _TAG_RE = re.compile(r"<[^>]+>")
 
 
@@ -25,8 +27,24 @@ def sanitize_history_answer(answer: str) -> str:
     if not isinstance(answer, str) or not answer:
         return ""
     text = _TOOL_HTML_RE.sub("Rendered tool output.", answer)
+    text = _TOOL_CANVAS_RE.sub("Applied canvas actions.", text)
     text = _TAG_RE.sub("", text)
     return html.unescape(text).strip()
+
+
+def _parse_tool_result_dict(result):
+    parsed_result = result
+    if isinstance(parsed_result, str):
+        stripped = parsed_result.strip()
+        if stripped.startswith("{") and stripped.endswith("}"):
+            try:
+                parsed_result = json.loads(stripped)
+            except Exception:
+                try:
+                    parsed_result = ast.literal_eval(stripped)
+                except Exception:
+                    parsed_result = result
+    return parsed_result
 
 
 def safe_json(value):
@@ -103,17 +121,7 @@ def format_tool_status_done(args, call_id: str | None):
 
 
 def resolve_tool_html(result):
-    parsed_result = result
-    if isinstance(parsed_result, str):
-        stripped = parsed_result.strip()
-        if stripped.startswith("{") and stripped.endswith("}"):
-            try:
-                parsed_result = json.loads(stripped)
-            except Exception:
-                try:
-                    parsed_result = ast.literal_eval(stripped)
-                except Exception:
-                    parsed_result = result
+    parsed_result = _parse_tool_result_dict(result)
     if isinstance(parsed_result, dict) and "_pylogue_html_id" in parsed_result:
         token = parsed_result.get("_pylogue_html_id")
         try:
@@ -122,6 +130,19 @@ def resolve_tool_html(result):
             return None
         return take_html(token)
     return None
+
+
+def resolve_tool_canvas_actions(result):
+    parsed_result = _parse_tool_result_dict(result)
+    if not isinstance(parsed_result, dict):
+        return None
+    actions = parsed_result.get("_pylogue_canvas_actions")
+    if not isinstance(actions, list):
+        return None
+    try:
+        return json.dumps({"actions": actions}, ensure_ascii=True, separators=(",", ":"))
+    except TypeError:
+        return None
 
 
 def should_render_tool_result_raw(tool_name: str | None, result) -> bool:
@@ -138,6 +159,11 @@ def wrap_tool_html(result: str) -> str:
     if stripped.startswith("<div") and stripped.endswith("</div>"):
         return result
     return f'<div class="tool-html">{result}</div>'
+
+
+def wrap_tool_canvas_actions(actions_json: str) -> str:
+    encoded = base64.b64encode(actions_json.encode("utf-8")).decode("ascii")
+    return f'<div class="tool-canvas-actions" data-actions-b64="{encoded}"></div>'
 
 
 def extract_user_from_context(context):
