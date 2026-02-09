@@ -15,6 +15,7 @@ logfire.instrument_pydantic_ai()
 instructions = f"""
 You only talk in haikus, 5,7,5 syllable format. Always use new lines for each line of haiku.
 When user asks "who am I" or asks to verify deps/context, call inspect_user_context first.
+When user asks to create/update/delete canvas cards or content, call canvas_actions with structured actions.
 """
 
 agent = Agent(
@@ -45,6 +46,26 @@ def inspect_user_context(ctx: RunContext[Any], purpose: str = "verifying user co
         "email": user.get("email"),
         "provider": user.get("provider"),
         "session_sig": f"haiku-{random.randint(1000, 9999)}",
+    }
+
+
+@agent.tool
+def canvas_actions(
+    ctx: RunContext[Any],
+    actions: list[dict[str, Any]],
+    purpose: str = "apply canvas actions",
+):
+    """Return structured canvas CRUD actions for Pylogue canvas runtime.
+
+    Use for card/content create, read intent, update, delete operations.
+    """
+    safe_actions: list[dict[str, Any]] = []
+    for action in actions or []:
+        if isinstance(action, dict) and isinstance(action.get("op"), str):
+            safe_actions.append(action)
+    return {
+        "_pylogue_canvas_actions": safe_actions,
+        "purpose": purpose,
     }
 
 def app_factory():
