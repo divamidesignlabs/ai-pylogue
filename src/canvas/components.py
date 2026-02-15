@@ -1,39 +1,5 @@
 from fasthtml.common import Div, H2
 
-
-CANVAS_ITEMS = [
-    {
-        "id": "sample-1",
-        "type": "insight",
-        "title": "Welcome",
-        "content": "100% of users find this canvas useful.",
-        "col_span": 4,
-        "row_span": 1,
-        "variant": "success",
-        "class": "shadow-lg",
-    },
-    {
-        "id": "sample-2",
-        "type": "insight",
-        "title": "Welcome",
-        "content": "20% of users find this canvas useful.",
-        "col_span": 4,
-        "row_span": 1,
-        "variant": "caution",
-        "class": "shadow-lg",
-    },
-    {
-        "id": "sample-2",
-        "type": "insight",
-        "title": "Welcome",
-        "content": "0% of users find this canvas useful.",
-        "col_span": 6,
-        "row_span": 1,
-        "variant": "danger",
-        "class": "shadow-lg",
-    }
-]
-
 INSIGHT_VARIANTS = {
     "success": "canvas-tile--insight-success",
     "caution": "canvas-tile--insight-caution",

@@ -13,15 +13,18 @@ from pylogue.core import (
     render_cards,
     render_input,
 )
-from canvas.components import CANVAS_ITEMS, render_canvas
+from canvas.components import render_canvas
+from canvas.crud import CanvasItemCRUD
+from canvas.data import CANVAS_ITEMS
 
 CANVAS_STATIC_DIR = Path(__file__).resolve().parent / "static"
+CANVAS_STORE = CanvasItemCRUD(CANVAS_ITEMS)
 
 
-def _canvas_panel():
+def _canvas_panel(canvas_items):
     return Div(
         H2("Canvas", cls="text-lg font-semibold text-slate-700 mb-3"),
-        Div(render_canvas(CANVAS_ITEMS), id="canvas-root", cls="canvas-empty canvas-root"),
+        Div(render_canvas(canvas_items), id="canvas-root", cls="canvas-empty canvas-root"),
         cls="canvas-left",
     )
 
@@ -55,9 +58,9 @@ def _chat_panel():
     )
 
 
-def _layout_shell():
+def _layout_shell(canvas_items):
     return Div(
-        _canvas_panel(),
+        _canvas_panel(canvas_items),
         _chat_panel(),
         cls="canvas-shell",
     )
@@ -87,10 +90,11 @@ def main(responder=None, responder_factory=None):
 
     @app.route("/")
     def home():
+        canvas_items = CANVAS_STORE.list_items()
         return (
             Title("Pylogue Canvas MVP"),
             Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
-            Body(_layout_shell()),
+            Body(_layout_shell(canvas_items)),
         )
 
     return app
