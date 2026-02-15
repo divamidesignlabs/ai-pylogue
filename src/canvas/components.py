@@ -7,18 +7,45 @@ CANVAS_ITEMS = [
         "type": "insight",
         "title": "Welcome",
         "content": "Canvas is ready. New items will appear here in order.",
+        "w": "50%",
+        "h": "auto",
     }
 ]
+
+
+def _tile_style(item):
+    w = item.get("w", "100%")
+    h = item.get("h", "auto")
+    return f"width:{w};height:{h};"
+
+
+def render_insight(item):
+    return Div(
+        H2(item.get("title", "Untitled"), cls="canvas-tile-title"),
+        Div(item.get("content", ""), cls="canvas-tile-body"),
+        cls="canvas-tile",
+        style=_tile_style(item),
+    )
+
+
+def render_unknown(item):
+    return Div(
+        H2(item.get("title", "Unsupported item"), cls="canvas-tile-title"),
+        Div(f"Unknown type: {item.get('type', 'none')}", cls="canvas-tile-body canvas-tile-body--unknown"),
+        cls="canvas-tile canvas-tile--unknown",
+        style=_tile_style(item),
+    )
+
+
+RENDERERS = {
+    "insight": render_insight,
+}
 
 
 def render_canvas(items):
     cards = []
     for item in items:
-        cards.append(
-            Div(
-                H2(item.get("title", "Untitled"), cls="text-base font-semibold text-slate-800"),
-                Div(item.get("content", ""), cls="text-sm text-slate-600 mt-1"),
-                cls="rounded-lg border border-slate-200 bg-white p-3",
-            )
-        )
-    return Div(*cards, cls="space-y-3")
+        item_type = item.get("type", "")
+        renderer = RENDERERS.get(item_type, render_unknown)
+        cards.append(renderer(item))
+    return Div(*cards, cls="canvas-stack")

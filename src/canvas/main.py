@@ -1,4 +1,4 @@
-from fasthtml.common import Body, Div, Form, H2, Meta, Script, Title
+from fasthtml.common import Body, Div, Form, H2, Link, Meta, Title
 from monsterui.all import Button, ButtonT, FastHTML as MUFastHTML
 import os
 from pathlib import Path
@@ -21,7 +21,7 @@ CANVAS_STATIC_DIR = Path(__file__).resolve().parent / "static"
 def _canvas_panel():
     return Div(
         H2("Canvas", cls="text-lg font-semibold text-slate-700 mb-3"),
-        Div(render_canvas(CANVAS_ITEMS), id="canvas-root", cls="canvas-empty p-3 overflow-auto"),
+        Div(render_canvas(CANVAS_ITEMS), id="canvas-root", cls="canvas-empty canvas-root"),
         cls="canvas-left",
     )
 
@@ -49,7 +49,7 @@ def _chat_panel():
         Div(
             render_cards([]),
             _chat_form(),
-            cls="space-y-4",
+            cls="space-y-4 canvas-chat-body",
         ),
         cls="canvas-right",
     )
@@ -69,7 +69,7 @@ def main(responder=None, responder_factory=None):
         responder = responder or EchoResponder()
 
     headers = list(get_core_headers(include_markdown=True))
-    headers.append(Script(src="/static/canvas.js"))
+    headers.append(Link(rel="stylesheet", href="/static/canvas.css"))
 
     app_kwargs = {"exts": "ws", "hdrs": tuple(headers), "pico": False}
     app_kwargs["session_cookie"] = _session_cookie_name()
@@ -81,9 +81,9 @@ def main(responder=None, responder_factory=None):
     register_core_static(app)
     register_ws_routes(app, responder=responder, responder_factory=responder_factory)
 
-    @app.route("/static/canvas.js")
-    def _canvas_js():
-        return FileResponse(CANVAS_STATIC_DIR / "canvas.js")
+    @app.route("/static/canvas.css")
+    def _canvas_css():
+        return FileResponse(CANVAS_STATIC_DIR / "canvas.css")
 
     @app.route("/")
     def home():
