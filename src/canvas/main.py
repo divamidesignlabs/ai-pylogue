@@ -13,6 +13,7 @@ from pylogue.core import (
     render_cards,
     render_input,
 )
+from canvas.components import CANVAS_ITEMS, render_canvas
 
 CANVAS_STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -20,7 +21,7 @@ CANVAS_STATIC_DIR = Path(__file__).resolve().parent / "static"
 def _canvas_panel():
     return Div(
         H2("Canvas", cls="text-lg font-semibold text-slate-700 mb-3"),
-        Div(id="canvas-root", cls="canvas-empty"),
+        Div(render_canvas(CANVAS_ITEMS), id="canvas-root", cls="canvas-empty p-3 overflow-auto"),
         cls="canvas-left",
     )
 
