@@ -25,6 +25,12 @@
   --canvas-color-warn-border: #fde68a;
   --canvas-color-warn-bg: #fffbeb;
   --canvas-color-warn-text: #b45309;
+  --canvas-color-success-border: #86efac;
+  --canvas-color-success-bg: #f0fdf4;
+  --canvas-color-caution-border: #fde68a;
+  --canvas-color-caution-bg: #fffbeb;
+  --canvas-color-danger-border: #fecaca;
+  --canvas-color-danger-bg: #fef2f2;
 
   --canvas-font-size-title: 1rem;
   --canvas-font-size-body: 0.875rem;
@@ -81,6 +87,18 @@
   background: var(--canvas-color-warn-bg);
 }
 .canvas-tile-body--unknown { color: var(--canvas-color-warn-text); }
+.canvas-tile--insight-success {
+  border-color: var(--canvas-color-success-border);
+  background: var(--canvas-color-success-bg);
+}
+.canvas-tile--insight-caution {
+  border-color: var(--canvas-color-caution-border);
+  background: var(--canvas-color-caution-bg);
+}
+.canvas-tile--insight-danger {
+  border-color: var(--canvas-color-danger-border);
+  background: var(--canvas-color-danger-bg);
+}
 
 @media (max-width: 960px) {
   .canvas-shell { grid-template-columns: 1fr; }
