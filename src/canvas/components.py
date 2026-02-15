@@ -6,10 +6,30 @@ CANVAS_ITEMS = [
         "id": "sample-1",
         "type": "insight",
         "title": "Welcome",
-        "content": "Canvas is ready. New items will appear here in order.",
-        "w": "50%",
-        "h": "auto",
+        "content": "100% of users find this canvas useful.",
+        "col_span": 4,
+        "row_span": 1,
         "variant": "success",
+        "class": "shadow-lg",
+    },
+    {
+        "id": "sample-2",
+        "type": "insight",
+        "title": "Welcome",
+        "content": "20% of users find this canvas useful.",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "caution",
+        "class": "shadow-lg",
+    },
+    {
+        "id": "sample-2",
+        "type": "insight",
+        "title": "Welcome",
+        "content": "0% of users find this canvas useful.",
+        "col_span": 6,
+        "row_span": 1,
+        "variant": "danger",
         "class": "shadow-lg",
     }
 ]
@@ -21,10 +41,17 @@ INSIGHT_VARIANTS = {
 }
 
 
-def _component_style(item):
-    w = item.get("w", "100%")
-    h = item.get("h", "auto")
-    return f"width:{w};height:{h};"
+def _span(value, lo, hi, default):
+    try:
+        return max(lo, min(int(value), hi))
+    except Exception:
+        return default
+
+
+def _component_layout_style(item):
+    col = _span(item.get("col_span", 12), 1, 12, 12)
+    row = _span(item.get("row_span", 1), 1, 6, 1)
+    return f"grid-column: span {col}; grid-row: span {row};"
 
 
 def _component_cls(item, base_cls, *extra_cls):
@@ -43,7 +70,7 @@ def render_insight(item):
         H2(item.get("title", "Untitled"), cls="canvas-tile-title"),
         Div(item.get("content", ""), cls="canvas-tile-body"),
         cls=_component_cls(item, "canvas-tile", variant),
-        style=_component_style(item),
+        style=_component_layout_style(item),
     )
 
 
@@ -52,7 +79,7 @@ def render_unknown(item):
         H2(item.get("title", "Unsupported item"), cls="canvas-tile-title"),
         Div(f"Unknown type: {item.get('type', 'none')}", cls="canvas-tile-body canvas-tile-body--unknown"),
         cls=_component_cls(item, "canvas-tile", "canvas-tile--unknown"),
-        style=_component_style(item),
+        style=_component_layout_style(item),
     )
 
 
@@ -67,4 +94,4 @@ def render_canvas(items):
         item_type = item.get("type", "")
         renderer = RENDERERS.get(item_type, render_unknown)
         cards.append(renderer(item))
-    return Div(*cards, cls="canvas-stack")
+    return Div(*cards, cls="canvas-grid")
