@@ -3,13 +3,13 @@
 ## Why this feature exists
 
 The goal is to evolve Pylogue from chat-only analytics into a persistent personal operating surface for leaders.
-The user can ask questions across SQL, Salesforce, and email data, generate visualizations, and pin useful outputs to a long-lived dashboard canvas.
-The canvas should auto-refresh from live data and proactively surface high-risk items like renewal risk, stalled SOWs, or cold follow-ups.
+The user can ask questions across connected enterprise systems, generate visualizations, and pin useful outputs to a long-lived dashboard canvas.
+The canvas should auto-refresh from live data and proactively surface high-risk items like contract risk, blocked approvals, or stale follow-ups.
 Every artifact should support drilldown and action loops back into chat.
 
 ## Product intent
 
-1. Let users ask in chat and get answers from connected business systems.
+1. Let users ask in chat and get answers from connected business systems and operational tools.
 2. Let users pin any useful output to a personalized dashboard canvas.
 3. Keep pinned artifacts fresh through scheduled refresh and on-demand reruns.
 4. Add an attention layer that groups urgent issues by actionability.
@@ -21,16 +21,16 @@ Every artifact should support drilldown and action loops back into chat.
 
 1. Persistent canvas layout and pinned artifacts per user.
 2. Artifact model that stores query and rendering specs, not only raw HTML.
-3. Connectors for SQL-like sources, Salesforce, and email metadata.
-4. Refresh jobs with freshness state and error handling.
-5. Attention engine with grouped cards (`Escalate`, `Needs Approval`, `Immediate Attention`, `Watch`).
-6. Drilldown interactions and multi-select to chat actions.
+3. Refresh jobs with freshness state and error handling.
+4. Attention engine with grouped cards (`Escalate`, `Needs Approval`, `Immediate Attention`, `Watch`).
+5. Drilldown interactions and multi-select to chat actions.
 
 ### Out of scope for v1
 
 1. Multi-user real-time collaborative editing on the same canvas.
 2. Arbitrary external workflow execution without approval policy.
 3. Full universal BI semantics across every data backend.
+4. Connectors for SQL-like sources, CRM systems (for example Salesforce), email, and other operational systems.
 
 ## Layered architecture
 
@@ -57,7 +57,7 @@ flowchart LR
   end
 
   subgraph PLATFORM["Platform Layer"]
-    CONN["Connectors: SQL, Salesforce, Email"]
+    CONN["Connectors: SQL, CRM, Email, Tickets, Docs"]
     ART["Artifact Registry"]
     CAN["Canvas Layout Store"]
     R["Renderer"]
@@ -164,7 +164,7 @@ sequenceDiagram
   participant CV as Canvas Store
   participant RD as Renderer
 
-  U->>CH: Ask question for sales status
+  U->>CH: Ask question about business performance
   CH->>AG: Prompt + context
   AG->>CN: Fetch data
   CN-->>AG: Result set
@@ -218,10 +218,10 @@ flowchart TD
 ## Attention engine design
 
 Signal examples:
-1. Renewal missing for account with near-term expiration.
-2. SOW pending for more than threshold days.
-3. Demo follow-up stale based on last touch.
-4. High-value lead with no activity after presentation.
+1. Contract or renewal risk with near-term deadline.
+2. Approval or dependency pending beyond threshold days.
+3. Follow-up stale based on last touch.
+4. High-value opportunity with no recent movement.
 
 Lane assignment:
 1. `Escalate`: high risk and high business impact.
@@ -231,10 +231,10 @@ Lane assignment:
 
 ```mermaid
 flowchart LR
-  D1["Salesforce opportunities"] --> N["Signal normalizer"]
+  D1["CRM opportunities (for example Salesforce)"] --> N["Signal normalizer"]
   D2["Email metadata"] --> N
-  D3["CRM activity logs"] --> N
-  D4["SQL revenue models"] --> N
+  D3["Task or ticket activity logs"] --> N
+  D4["Warehouse KPI models"] --> N
 
   N --> F["Feature extractor"]
   F --> SC["Risk scorer"]
@@ -255,7 +255,7 @@ chat: "Chat Interface"
 canvas: "Intelligent Canvas"
 agent: "Agent Orchestrator"
 tools: "Tool Router"
-connectors: "Connectors\n(SQL, Salesforce, Email)"
+connectors: "Connectors\n(SQL, CRM, Email, Tickets, Docs)"
 artifact: "Artifact Registry"
 layout: "Canvas Layout Store"
 scheduler: "Refresh Scheduler"
