@@ -1,5 +1,7 @@
-from fasthtml.common import Body, Div, Form, H2, Link, Meta, Title
+from fasthtml.common import Body, Div, Form, H2, Link, Meta, Script, Title
 from monsterui.all import Button, ButtonT, FastHTML as MUFastHTML
+import asyncio
+import logging
 import os
 from pathlib import Path
 from starlette.responses import FileResponse
@@ -14,20 +16,29 @@ from pylogue.core import (
     render_input,
 )
 from canvas.components import render_canvas
-from canvas.state import CANVAS_STORE
+from canvas.state import (
+    CANVAS_STORE,
+    subscribe_canvas,
+    unsubscribe_canvas,
+)
 
 CANVAS_STATIC_DIR = Path(__file__).resolve().parent / "static"
+_LOG = logging.getLogger(__name__)
 
 
-def _canvas_panel(canvas_items):
+def _canvas_panel(canvas_items, oob: bool = False):
+    attrs = {}
+    if oob:
+        attrs["hx_swap_oob"] = "outerHTML"
     return Div(
         H2("Canvas", cls="text-lg font-semibold text-slate-700 mb-3"),
         Div(render_canvas(canvas_items), id="canvas-root", cls="canvas-empty canvas-root"),
         cls="canvas-left",
         id="canvas-panel",
         hx_get="/canvas/panel",
-        hx_trigger="load, every 2s",
+        hx_trigger="canvas_refresh from:body",
         hx_swap="outerHTML",
+        **attrs,
     )
 
 
@@ -75,6 +86,7 @@ def main(responder=None, responder_factory=None):
 
     headers = list(get_core_headers(include_markdown=True))
     headers.append(Link(rel="stylesheet", href="/static/canvas.css"))
+    headers.append(Script(src="/static/canvas-ws.js", type="module"))
 
     app_kwargs = {"exts": "ws", "hdrs": tuple(headers), "pico": False}
     app_kwargs["session_cookie"] = _session_cookie_name()
@@ -86,9 +98,29 @@ def main(responder=None, responder_factory=None):
     register_core_static(app)
     register_ws_routes(app, responder=responder, responder_factory=responder_factory)
 
+    canvas_ws_sessions: dict[int, int] = {}
+
+    async def _on_canvas_ws_connect(ws, send):
+        token = subscribe_canvas(send, loop=asyncio.get_running_loop())
+        canvas_ws_sessions[id(ws)] = token
+        return "canvas_refresh"
+
+    def _on_canvas_ws_disconnect(ws):
+        token = canvas_ws_sessions.pop(id(ws), None)
+        if token is not None:
+            unsubscribe_canvas(token)
+
+    @app.ws("/canvas/ws", conn=_on_canvas_ws_connect, disconn=_on_canvas_ws_disconnect)
+    async def _canvas_ws(_msg: str, send, ws):
+        return
+
     @app.route("/static/canvas.css")
     def _canvas_css():
         return FileResponse(CANVAS_STATIC_DIR / "canvas.css")
+
+    @app.route("/static/canvas-ws.js")
+    def _canvas_ws_js():
+        return FileResponse(CANVAS_STATIC_DIR / "canvas-ws.js")
 
     @app.route("/")
     def home():
@@ -101,7 +133,9 @@ def main(responder=None, responder_factory=None):
 
     @app.route("/canvas/panel")
     def canvas_panel():
-        return _canvas_panel(CANVAS_STORE.list_items())
+        items = CANVAS_STORE.list_items()
+        _LOG.info("Canvas panel render requested: items=%s", len(items))
+        return _canvas_panel(items)
 
     return app
 
