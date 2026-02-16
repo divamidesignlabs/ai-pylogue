@@ -63,7 +63,8 @@
         "row_span": 1,
         "variant": "danger",
         "canvas_id": "main",
-        "id": "c6"
+        "id": "c6",
+        "drilldown_canvas_id": "approvals"
       }
     ],
     "details": [
@@ -252,6 +253,39 @@
         "col_span": 4,
         "row_span": 1,
         "id": "c17"
+      },
+      {
+        "component_type": "insight",
+        "title": "Random Email 1",
+        "content": "user1@example.com",
+        "item_description": "This is a random email.",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c18"
+      },
+      {
+        "component_type": "insight",
+        "item_description": "This is a random email.",
+        "title": "Random Email 2",
+        "content": "user2@example.com",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c19"
+      },
+      {
+        "component_type": "insight",
+        "item_description": "This is a random email.",
+        "content": "user3@example.com",
+        "title": "Random Email 3",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c20"
       }
     ],
     "mails": [
@@ -317,6 +351,88 @@
         "row_span": 2,
         "variant": "success",
         "id": "c6"
+      },
+      {
+        "content": "This is the content of the fifth dummy email.",
+        "item_description": "This is the fifth dummy email.",
+        "title": "Dummy Email 5",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c7"
+      },
+      {
+        "content": "This is the content of the sixth dummy email.",
+        "item_description": "This is the sixth dummy email.",
+        "title": "Dummy Email 6",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c8"
+      },
+      {
+        "content": "This is the content of the seventh dummy email.",
+        "item_description": "This is the seventh dummy email.",
+        "title": "Dummy Email 7",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c9"
+      },
+      {
+        "title": "Team Leaves",
+        "content": "Team members on leave this week: John (Mon-Wed), Jane (Tue-Thu)",
+        "item_description": "Team leaves",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c10"
+      }
+    ],
+    "approvals": [
+      {
+        "content": "content for dummy approval 1",
+        "title": "Dummy Approval 1",
+        "item_description": "dummy approval 1",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c1"
+      },
+      {
+        "content": "content for dummy approval 2",
+        "item_description": "dummy approval 2",
+        "title": "Dummy Approval 2",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c2"
+      },
+      {
+        "item_description": "dummy approval 3",
+        "content": "content for dummy approval 3",
+        "title": "Dummy Approval 3",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c3"
+      },
+      {
+        "content": "content for dummy approval 4",
+        "item_description": "dummy approval 4",
+        "title": "Dummy Approval 4",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c4"
       }
     ]
   }
