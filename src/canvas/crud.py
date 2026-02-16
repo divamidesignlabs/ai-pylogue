@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 
 
@@ -20,8 +20,13 @@ class CanvasItemCRUD:
     }
     GET_ITEM_DEFAULT_FIELDS = ("id", "item_description")
 
-    def __init__(self, initial_items: list[dict[str, Any]] | None = None):
+    def __init__(
+        self,
+        initial_items: list[dict[str, Any]] | None = None,
+        on_change: Callable[[], None] | None = None,
+    ):
         self._items = deepcopy(initial_items or [])
+        self._on_change = on_change
 
     def list_items(self) -> list[dict[str, Any]]:
         return deepcopy(self._items)
@@ -102,6 +107,7 @@ class CanvasItemCRUD:
         if self._get_item_raw(created["id"]):
             raise ValueError(f"Item with id '{created['id']}' already exists.")
         self._items.append(created)
+        self._emit_change()
         return deepcopy(created)
 
     def update_item(self, item_id: str, patch: dict[str, Any]) -> dict[str, Any] | None:
@@ -112,6 +118,7 @@ class CanvasItemCRUD:
             updated.update(deepcopy(patch))
             updated["id"] = item_id
             self._items[index] = updated
+            self._emit_change()
             return deepcopy(updated)
         return None
 
@@ -119,8 +126,13 @@ class CanvasItemCRUD:
         for index, item in enumerate(self._items):
             if item.get("id") == item_id:
                 self._items.pop(index)
+                self._emit_change()
                 return True
         return False
+
+    def _emit_change(self) -> None:
+        if callable(self._on_change):
+            self._on_change()
 
     @staticmethod
     def _project(
