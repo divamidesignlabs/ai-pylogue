@@ -34,7 +34,10 @@
 
   --canvas-font-size-title: 1rem;
   --canvas-font-size-body: 0.875rem;
+  --canvas-font-size-insight-label: 0.95rem;
+  --canvas-font-size-insight-value: 2.2rem;
   --canvas-font-weight-semibold: 600;
+  --canvas-font-weight-bold: 700;
   --canvas-chat-max-h-offset: 9rem;
   --canvas-grid-cols: 12;
   --canvas-grid-row-h: 140px;
@@ -83,6 +86,49 @@
   background: var(--canvas-color-bg-panel);
   padding: var(--canvas-space-md);
   box-shadow: var(--canvas-tile-shadow);
+}
+.canvas-insight {
+  justify-content: flex-start;
+  border-radius: 1.75rem;
+  border-color: #f3ccd1;
+  background: #ffffff;
+  padding: 2rem;
+}
+.canvas-insight-title {
+  margin: 0;
+  color: #667085;
+  font-size: var(--canvas-font-size-insight-label);
+  font-weight: 500;
+  text-align: left;
+}
+.canvas-insight-value {
+  margin-top: 1.5rem;
+  color: #0f172a;
+  font-size: var(--canvas-font-size-insight-value);
+  font-weight: var(--canvas-font-weight-bold);
+  line-height: 1.1;
+}
+.canvas-insight--hero {
+  justify-content: center;
+  gap: 0.75rem;
+}
+.canvas-insight--hero .canvas-insight-title,
+.canvas-insight--hero .canvas-insight-value {
+  margin-top: 0;
+}
+.canvas-insight--compact .canvas-insight-title {
+  font-size: 0.9rem;
+}
+.canvas-insight--compact .canvas-insight-value {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+.canvas-insight--hero .canvas-insight-title {
+  font-size: var(--canvas-font-size-insight-label);
+}
+.canvas-insight--hero .canvas-insight-value {
+  font-size: var(--canvas-font-size-insight-value);
 }
 .canvas-tile-title {
   margin: 0;
