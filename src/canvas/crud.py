@@ -5,7 +5,7 @@ from typing import Any, Callable
 
 
 class CanvasItemCRUD:
-    SUMMARY_FIELDS = ("id", "type", "item_description")
+    SUMMARY_FIELDS = ("id", "type", "item_description", "title", "content")
 
     def __init__(
         self,
@@ -31,16 +31,12 @@ class CanvasItemCRUD:
         size = max(1, int(limit))
         end = min(total, start + size)
         page = self._items[start:end]
-        rows = [
-            [
-                item.get("id", ""),
-                item.get("type", ""),
-                item.get("item_description", ""),
-            ]
-            for item in page
-        ]
+        rows = [[item.get(field, "") for field in self.SUMMARY_FIELDS] for item in page]
         _ = total, start, size, end  # pagination remains enforced by args; output stays pure CSV
-        return self._to_csv(["item_id", "component_type", "item_description"], rows)
+        return self._to_csv(
+            ["item_id", "component_type", "item_description", "title", "content"],
+            rows,
+        )
 
     def _get_item_raw(self, item_id: str) -> dict[str, Any] | None:
         for item in self._items:

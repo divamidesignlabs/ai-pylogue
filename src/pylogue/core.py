@@ -98,6 +98,17 @@ def _connection_auth(conn):
     return None
 
 
+def _connection_session(conn):
+    try:
+        scope = conn.scope
+    except Exception:
+        return None
+    if not isinstance(scope, dict):
+        return None
+    session = scope.get("session")
+    return session if isinstance(session, dict) else None
+
+
 def _user_context_from_auth(auth):
     if not isinstance(auth, dict):
         return None
@@ -113,12 +124,16 @@ def _user_context_from_auth(auth):
 
 def _build_responder_context(conn):
     auth = _connection_auth(conn)
-    if not auth:
-        return None
-    return {
-        "auth": auth,
-        "user": _user_context_from_auth(auth),
-    }
+    session = _connection_session(conn)
+    context = {}
+    if auth:
+        context["auth"] = auth
+        context["user"] = _user_context_from_auth(auth)
+    if session:
+        canvas_id = session.get("canvas_current_id")
+        if isinstance(canvas_id, str) and canvas_id.strip():
+            context["canvas"] = {"current_canvas_id": canvas_id.strip()}
+    return context or None
 
 
 def _invoke_responder(responder, prompt: str, context):

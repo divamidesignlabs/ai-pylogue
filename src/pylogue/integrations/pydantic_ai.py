@@ -58,17 +58,23 @@ def _extract_tool_result(event, messages_module):
 
 def _merge_user_into_deps(base_deps, context):
     user = context.get("user") if isinstance(context, dict) else None
-    if not isinstance(user, dict):
+    canvas = context.get("canvas") if isinstance(context, dict) else None
+    payload = {}
+    if isinstance(user, dict):
+        payload["pylogue_user"] = user
+    if isinstance(canvas, dict):
+        payload["pylogue_canvas"] = canvas
+    if not payload:
         return base_deps
 
     # No baseline deps configured: pass a lightweight mapping as deps.
     if base_deps is None:
-        return {"pylogue_user": user}
+        return payload
 
     # Common case for dict-based deps.
     if isinstance(base_deps, dict):
         merged = dict(base_deps)
-        merged["pylogue_user"] = user
+        merged.update(payload)
         return merged
 
     # Try to preserve existing deps type while attaching user context.
@@ -77,7 +83,8 @@ def _merge_user_into_deps(base_deps, context):
     except Exception:
         merged = base_deps
     try:
-        setattr(merged, "pylogue_user", user)
+        for key, value in payload.items():
+            setattr(merged, key, value)
         return merged
     except Exception:
         return base_deps
@@ -189,7 +196,7 @@ class PydanticAIResponder:
     def set_context(self, context=None) -> None:
         user = _extract_user_from_context(context)
         self._active_user = user
-        self.agent_deps = _merge_user_into_deps(self._base_agent_deps, {"user": user} if user else None)
+        self.agent_deps = _merge_user_into_deps(self._base_agent_deps, context if isinstance(context, dict) else None)
     
     async def __call__(self, text: str, context=None):
         from pydantic_ai import messages
