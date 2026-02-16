@@ -1,4 +1,5 @@
 from typing import Any, Callable
+from copy import deepcopy
 from pydantic_ai import RunContext
 
 
@@ -37,6 +38,8 @@ Behavior contract:
 7) After mutations, run one verification read (list_canvas_items) before replying.
 8) End every turn with plain text only (no JSON, no markdown tables), max 2 short sentences.
 9) For linking a card to another canvas, always use `link_canvas_item(source_canvas_id, item_id, target_canvas_id)`.
+10) For moving a card across canvases, always use `move_canvas_item(source_canvas_id, target_canvas_id, item_id)`.
+11) Never claim a move/update/create succeeded unless the tool returned success and a verification read confirms it.
 
 Operational defaults:
 - New insight defaults: type=insight, col_span=4, row_span=1, variant=success.
@@ -168,4 +171,52 @@ def install_canvas_tools(
             "source_canvas_id": source_canvas_id,
             "item_id": item_id,
             "target_canvas_id": target_canvas_id,
+        }
+
+    @agent.tool
+    def move_canvas_item(
+        ctx: RunContext[Any],
+        source_canvas_id: str = "",
+        target_canvas_id: str = "",
+        item_id: str = "",
+    ):
+        """Move one item from source canvas to target canvas in a single deterministic operation."""
+        source_canvas_id = _resolve_canvas_id(ctx, source_canvas_id)
+        target_canvas_id = (target_canvas_id or "").strip()
+        item_id = (item_id or "").strip()
+        if not item_id:
+            return {"moved": False, "error": "item_id is required"}
+        if not target_canvas_id:
+            return {"moved": False, "error": "target_canvas_id is required"}
+        if source_canvas_id == target_canvas_id:
+            return {"moved": False, "error": "source and target canvas are the same"}
+
+        source_store = get_store(source_canvas_id)
+        target_store = get_store(target_canvas_id)
+        source_items = source_store.list_items()
+        payload = next((deepcopy(item) for item in source_items if str(item.get("id")) == item_id), None)
+        if payload is None:
+            return {
+                "moved": False,
+                "error": f"item '{item_id}' not found in canvas '{source_canvas_id}'",
+            }
+
+        # Avoid id collisions in target canvas.
+        target_ids = {str(item.get("id")) for item in target_store.list_items()}
+        if str(payload.get("id")) in target_ids:
+            payload.pop("id", None)
+
+        created = target_store.create_item(payload)
+        deleted = source_store.delete_item(item_id)
+        if not deleted:
+            # Best-effort rollback if source delete unexpectedly fails.
+            target_store.delete_item(str(created.get("id")))
+            return {"moved": False, "error": "failed to delete source item"}
+
+        return {
+            "moved": True,
+            "source_canvas_id": source_canvas_id,
+            "target_canvas_id": target_canvas_id,
+            "source_item_id": item_id,
+            "target_item_id": created.get("id"),
         }
