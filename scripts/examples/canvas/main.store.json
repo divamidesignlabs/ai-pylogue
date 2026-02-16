@@ -10,7 +10,7 @@
         "col_span": 12,
         "row_span": 1,
         "variant": "success",
-        "drilldown_canvas_id": "main"
+        "drilldown_canvas_id": "details"
       },
       {
         "id": "c2",
