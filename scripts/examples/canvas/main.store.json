@@ -63,7 +63,8 @@
         "row_span": 1,
         "variant": "danger",
         "canvas_id": "main",
-        "id": "c6"
+        "id": "c6",
+        "drilldown_canvas_id": "mails"
       }
     ],
     "details": [
@@ -76,6 +77,182 @@
         "col_span": 12,
         "row_span": 1,
         "variant": "success"
+      },
+      {
+        "component_type": "insight",
+        "content": "$1.5M",
+        "title": "Dummy Revenue",
+        "item_description": "This is dummy revenue data.",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c2"
+      },
+      {
+        "title": "Growth Rate",
+        "component_type": "insight",
+        "item_description": "This is dummy growth rate data.",
+        "content": "85%",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c3"
+      },
+      {
+        "item_description": "This is dummy customer acquisition data.",
+        "title": "New Customers",
+        "content": "120",
+        "component_type": "insight",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "variant": "success",
+        "id": "c4"
+      },
+      {
+        "title": "Q1 Revenue",
+        "component_type": "insight",
+        "content": "$2.1M",
+        "item_description": "This is dummy revenue data for Q1.",
+        "variant": "danger",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c5"
+      },
+      {
+        "content": "110%",
+        "item_description": "This is dummy growth rate data for Q1.",
+        "component_type": "insight",
+        "title": "Q1 Growth Rate",
+        "variant": "success",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c6"
+      },
+      {
+        "item_description": "This is dummy customer acquisition data for Q1.",
+        "content": "150",
+        "title": "Q1 New Customers",
+        "component_type": "insight",
+        "variant": "caution",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c7"
+      },
+      {
+        "component_type": "insight",
+        "variant": "success",
+        "title": "Project Alpha Revenue",
+        "content": "$500K",
+        "item_description": "Revenue for a specific project.",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c8"
+      },
+      {
+        "variant": "caution",
+        "item_description": "Revenue for another project.",
+        "component_type": "insight",
+        "content": "$750K",
+        "title": "Project Beta Revenue",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c9"
+      },
+      {
+        "title": "Project Gamma Revenue",
+        "variant": "danger",
+        "content": "$1.2M",
+        "component_type": "insight",
+        "item_description": "Revenue for a third project.",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c10"
+      },
+      {
+        "item_description": "New customers acquired through marketing campaign A.",
+        "variant": "success",
+        "component_type": "insight",
+        "title": "Campaign A New Customers",
+        "content": "50",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c11"
+      },
+      {
+        "item_description": "New customers acquired through marketing campaign B.",
+        "content": "75",
+        "variant": "caution",
+        "component_type": "insight",
+        "title": "Campaign B New Customers",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c12"
+      },
+      {
+        "item_description": "New customers acquired through marketing campaign C.",
+        "title": "Campaign C New Customers",
+        "content": "100",
+        "component_type": "insight",
+        "variant": "danger",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c13"
+      },
+      {
+        "component_type": "insight",
+        "title": "Project Alpha Growth Rate",
+        "item_description": "Growth rate for Project Alpha.",
+        "content": "15%",
+        "variant": "success",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c14"
+      },
+      {
+        "content": "20%",
+        "item_description": "Growth rate for Project Beta.",
+        "component_type": "insight",
+        "title": "Project Beta Growth Rate",
+        "variant": "caution",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c15"
+      },
+      {
+        "title": "Project Gamma Growth Rate",
+        "item_description": "Growth rate for Project Gamma.",
+        "variant": "danger",
+        "content": "25%",
+        "component_type": "insight",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c16"
+      },
+      {
+        "item_description": "Overall company revenue projection.",
+        "title": "Total Revenue Projection",
+        "content": "$10M",
+        "variant": "success",
+        "component_type": "insight",
+        "type": "insight",
+        "col_span": 4,
+        "row_span": 1,
+        "id": "c17"
       }
     ],
     "mails": [
