@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import logfire
 from pydantic_ai import Agent
 
+from canvas.components import RENDERERS
 from canvas.main import main as canvas_app_factory
 from canvas.state import CANVAS_STORE
 from pylogue.integrations.pydantic_ai import PydanticAIResponder
@@ -13,11 +14,16 @@ logfire.configure(
 )
 logfire.instrument_pydantic_ai()
 
-instructions = """
+COMPONENT_TYPES = ", ".join(sorted(RENDERERS.keys()))
+
+instructions = f"""
 You are the canvas assistant.
 Behavior contract:
 1) If user asks to update/delete/create, you MUST use tools and complete the action in this same turn.
-2) Use progressive reads: list_canvas_items first, then get_canvas_item only for selected ids.
+2) Use progressive reads in this exact order:
+   a) list_canvas_items
+   b) get_item_fields
+   c) get_canvas_item
 3) If user refers to relative position (e.g. "last card"), resolve it from list_canvas_items rows.
 4) For updates, always call update_canvas_item with both item_id and patch.
 5) After mutations, run one verification read (list_canvas_items) before replying.
@@ -27,6 +33,8 @@ Operational defaults:
 - New insight defaults: type=insight, col_span=4, row_span=1, variant=success.
 - If required fields are missing, infer safe defaults and proceed.
 - If a tool fails, explain the failure plainly and suggest the next single action.
+Available component types:
+{COMPONENT_TYPES}
 """
 
 agent = Agent(
@@ -39,14 +47,20 @@ agent = Agent(
 
 @agent.tool_plain()
 def list_canvas_items(limit: int = 12, offset: int = 0):
-    """List canvas items in compact progressive format."""
+    """CSV read: item_id, component_type, item_description."""
     return CANVAS_STORE.list_item_summaries(limit=limit, offset=offset)
 
 
 @agent.tool_plain()
-def get_canvas_item(item_id: str, level: str = "focus"):
-    """Get one canvas item with progressive detail level: scan|focus|full."""
-    return CANVAS_STORE.get_item_detail(item_id=item_id, level=level)
+def get_item_fields(item_id: str = "", component_type: str = ""):
+    """Return comma-separated available fields. Prefer item_id; fallback to component_type."""
+    return CANVAS_STORE.get_item_fields(item_id=item_id or None, component_type=component_type or None)
+
+
+@agent.tool_plain()
+def get_canvas_item(item_id: str, fields_csv: str):
+    """CSV read for one item. fields_csv is required, e.g. 'id,title,content'."""
+    return CANVAS_STORE.get_item(item_id=item_id, fields_csv=fields_csv)
 
 
 @agent.tool_plain()
