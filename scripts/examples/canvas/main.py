@@ -1,10 +1,11 @@
 from dotenv import load_dotenv
 import logfire
+from pathlib import Path
 from pydantic_ai import Agent
 
 from canvas.components import RENDERERS
+from canvas.state import CANVAS_STORE, configure_canvas_store
 from canvas.main import main as canvas_app_factory
-from canvas.state import CANVAS_STORE
 from pylogue.integrations.pydantic_ai import PydanticAIResponder
 
 load_dotenv(override=True)
@@ -14,10 +15,29 @@ logfire.configure(
 )
 logfire.instrument_pydantic_ai()
 
+STORE_PATH = Path(__file__).with_suffix(".store.json")
+configure_canvas_store(STORE_PATH)
+
 COMPONENT_TYPES = ", ".join(sorted(RENDERERS.keys()))
 
 instructions = f"""
 You are the canvas assistant.
+Layout model you must follow:
+- The canvas area uses a 12-column grid.
+- Each item uses `col_span` (1..12) and `row_span` (1..6).
+- The UI auto-places items in insertion order; there is no manual x/y positioning yet.
+- Prefer `col_span=4` for normal cards, `col_span=6` for medium emphasis, `col_span=12` for full-width.
+- Keep `row_span=1` unless user asks for taller cards.
+- For "full width", set `col_span=12`.
+
+How to understand current layout before changing it:
+1) Call `list_canvas_items` to get ordered item ids.
+2) Call `get_canvas_item` with `fields_csv="id,title,col_span,row_span,type"` for target ids.
+3) Infer row flow by insertion order with a 12-col budget:
+   - Add each item's `col_span` left-to-right.
+   - If next span would exceed 12, wrap to next row.
+4) Use that inferred row flow to interpret requests like "first row", "last card", "make top two full width".
+
 Behavior contract:
 1) If user asks to update/delete/create, you MUST use tools and complete the action in this same turn.
 2) Start with list_canvas_items for targeting.

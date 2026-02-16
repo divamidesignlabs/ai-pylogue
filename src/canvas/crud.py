@@ -18,6 +18,9 @@ class CanvasItemCRUD:
     def list_items(self) -> list[dict[str, Any]]:
         return deepcopy(self._items)
 
+    def set_items(self, items: list[dict[str, Any]]) -> None:
+        self._items = deepcopy(items or [])
+
     def list_component_types(self) -> str:
         types = sorted({str(item.get("type", "")).strip() for item in self._items if item.get("type")})
         return ", ".join(types)
