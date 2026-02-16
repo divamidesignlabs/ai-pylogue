@@ -36,12 +36,8 @@ class CanvasItemCRUD:
             ]
             for item in page
         ]
-        csv_text = self._to_csv(["item_id", "component_type", "item_description"], rows)
-        next_offset = str(end) if end < total else "none"
-        return (
-            f"{csv_text}\n"
-            f"# meta: offset={start}, limit={size}, next_offset={next_offset}, total={total}"
-        )
+        _ = total, start, size, end  # pagination remains enforced by args; output stays pure CSV
+        return self._to_csv(["item_id", "component_type", "item_description"], rows)
 
     def _get_item_raw(self, item_id: str) -> dict[str, Any] | None:
         for item in self._items:
