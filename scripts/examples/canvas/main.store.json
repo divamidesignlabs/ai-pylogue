@@ -20,7 +20,8 @@
         "content": "20% of users find this canvas useful.",
         "col_span": 6,
         "row_span": 1,
-        "variant": "caution"
+        "variant": "caution",
+        "canvas_id": "main"
       },
       {
         "id": "c3",
@@ -73,7 +74,8 @@
         "content": "2 renewals pending executive approval.",
         "col_span": 12,
         "row_span": 1,
-        "variant": "danger"
+        "variant": "danger",
+        "canvas_id": "main"
       }
     ],
     "mails": [
@@ -106,6 +108,39 @@
         "variant": "success",
         "item_description": "insight card: Newsletter",
         "id": "c3"
+      },
+      {
+        "component_type": "insight",
+        "item_description": "This is another dummy email.",
+        "title": "Dummy Email 2",
+        "content": "This is the content of the second dummy email.",
+        "type": "insight",
+        "col_span": 12,
+        "row_span": 2,
+        "variant": "success",
+        "id": "c4"
+      },
+      {
+        "content": "This is the content of the third dummy email.",
+        "title": "Dummy Email 3",
+        "item_description": "This is the third dummy email.",
+        "component_type": "insight",
+        "type": "insight",
+        "col_span": 12,
+        "row_span": 2,
+        "variant": "success",
+        "id": "c5"
+      },
+      {
+        "component_type": "insight",
+        "item_description": "This is the fourth dummy email.",
+        "title": "Dummy Email 4",
+        "content": "This is the content of the fourth dummy email.",
+        "type": "insight",
+        "col_span": 12,
+        "row_span": 2,
+        "variant": "success",
+        "id": "c6"
       }
     ]
   }

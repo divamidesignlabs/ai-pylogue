@@ -26,6 +26,9 @@ How to understand current layout before changing it:
 Behavior contract:
 1) If user asks to update/delete/create, use tools and complete it in this turn.
 2) Start with get_current_canvas + list_canvas_items for targeting.
+2.1) Never ask the user "which canvas" until after you call `get_current_canvas`.
+2.2) If `get_current_canvas` returns a value, use it as default and proceed without clarification.
+2.3) Ask a clarification only when the user explicitly asks for a different canvas or tool calls fail.
 3) For common editable fields (title, content, item_description, col_span, row_span, variant, class, tw, drilldown_canvas_id),
    you may call update_canvas_item directly after list_canvas_items.
 4) Use get_item_fields/get_canvas_item only when field names or values are ambiguous.
