@@ -1,6 +1,6 @@
 CANVAS_ITEMS = [
     {
-        "id": "sample-1",
+        "id": "c1",
         "type": "insight",
         "title": "Welcome",
         "item_description": "High-level welcome insight tile for canvas readiness.",
@@ -8,10 +8,9 @@ CANVAS_ITEMS = [
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "class": "shadow-lg",
     },
     {
-        "id": "sample-2",
+        "id": "c2",
         "type": "insight",
         "title": "Welcome",
         "item_description": "Caution-level insight showing moderate user value.",
@@ -19,10 +18,9 @@ CANVAS_ITEMS = [
         "col_span": 4,
         "row_span": 1,
         "variant": "caution",
-        "class": "shadow-lg",
     },
     {
-        "id": "sample-3",
+        "id": "c3",
         "type": "insight",
         "title": "Welcome",
         "item_description": "Danger-level insight showing low user value.",
@@ -30,6 +28,5 @@ CANVAS_ITEMS = [
         "col_span": 6,
         "row_span": 1,
         "variant": "danger",
-        "class": "shadow-lg",
     },
 ]

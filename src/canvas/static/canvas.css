@@ -38,6 +38,7 @@
   --canvas-chat-max-h-offset: 9rem;
   --canvas-grid-cols: 12;
   --canvas-grid-row-h: 140px;
+  --canvas-tile-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .canvas-shell {
@@ -81,6 +82,7 @@
   border-radius: var(--canvas-radius-md);
   background: var(--canvas-color-bg-panel);
   padding: var(--canvas-space-md);
+  box-shadow: var(--canvas-tile-shadow);
 }
 .canvas-tile-title {
   margin: 0;
