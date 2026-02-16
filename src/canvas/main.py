@@ -27,25 +27,42 @@ CANVAS_STATIC_DIR = Path(__file__).resolve().parent / "static"
 _LOG = logging.getLogger(__name__)
 
 
+def _canvas_nav_link(label: str, canvas_id: str, cls: str, parent_canvas_id: str | None = None):
+    page_href = f"/canvas/{canvas_id}"
+    panel_href = f"/canvas/{canvas_id}/panel"
+    if parent_canvas_id:
+        page_href = f"{page_href}?from={parent_canvas_id}"
+        panel_href = f"{panel_href}?from={parent_canvas_id}"
+    return A(
+        label,
+        href=page_href,
+        hx_get=panel_href,
+        hx_target="#canvas-panel",
+        hx_swap="outerHTML",
+        hx_push_url=page_href,
+        cls=cls,
+    )
+
+
 def _canvas_breadcrumbs(canvas_id: str, parent_canvas_id: str | None = None):
     current = canvas_id.strip() or "main"
     if current == "main":
         return Div(
-            A("Main", href="/canvas/main", cls="text-sm font-semibold text-slate-700"),
+            _canvas_nav_link("Main", "main", "text-sm font-semibold text-slate-700"),
             cls="flex items-center gap-2",
         )
     parent = (parent_canvas_id or "main").strip() or "main"
     if parent == "main":
         return Div(
-            A("Main", href="/canvas/main", cls="text-sm text-slate-600 hover:text-slate-900"),
+            _canvas_nav_link("Main", "main", "text-sm text-slate-600 hover:text-slate-900"),
             Div("/", cls="text-slate-400"),
             Div(current, cls="text-sm font-semibold text-slate-700"),
             cls="flex items-center gap-2",
         )
     return Div(
-        A("Main", href="/canvas/main", cls="text-sm text-slate-600 hover:text-slate-900"),
+        _canvas_nav_link("Main", "main", "text-sm text-slate-600 hover:text-slate-900"),
         Div("/", cls="text-slate-400"),
-        A(parent, href=f"/canvas/{parent}", cls="text-sm text-slate-600 hover:text-slate-900"),
+        _canvas_nav_link(parent, parent, "text-sm text-slate-600 hover:text-slate-900"),
         Div("/", cls="text-slate-400"),
         Div(current, cls="text-sm font-semibold text-slate-700"),
         cls="flex items-center gap-2",
@@ -173,6 +190,7 @@ def main(responder=None, responder_factory=None):
 
     @app.route("/canvas/{canvas_id}/panel")
     def canvas_panel(request: Request, canvas_id: str):
+        request.session["canvas_current_id"] = canvas_id
         items = get_canvas_store(canvas_id).list_items()
         parent_canvas_id = request.query_params.get("from")
         _LOG.info("Canvas panel render requested: items=%s", len(items))
