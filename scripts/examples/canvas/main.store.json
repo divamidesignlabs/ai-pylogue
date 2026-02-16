@@ -26,7 +26,7 @@
       {
         "id": "c3",
         "type": "insight",
-        "title": "Yolo",
+        "title": "Alert",
         "item_description": "Danger-level insight showing low user value.",
         "content": "0% of users find this canvas useful.",
         "col_span": 6,
@@ -53,6 +53,17 @@
         "row_span": 1,
         "variant": "danger",
         "drilldown_canvas_id": "mails"
+      },
+      {
+        "type": "insight",
+        "title": "Urgent",
+        "item_description": "Items requiring immediate attention.",
+        "content": "2 renewals pending executive approval.",
+        "col_span": 12,
+        "row_span": 1,
+        "variant": "danger",
+        "canvas_id": "main",
+        "id": "c6"
       }
     ],
     "details": [
@@ -65,17 +76,6 @@
         "col_span": 12,
         "row_span": 1,
         "variant": "success"
-      },
-      {
-        "id": "c2",
-        "type": "insight",
-        "title": "Urgent",
-        "item_description": "Items requiring immediate attention.",
-        "content": "2 renewals pending executive approval.",
-        "col_span": 12,
-        "row_span": 1,
-        "variant": "danger",
-        "canvas_id": "main"
       }
     ],
     "mails": [
