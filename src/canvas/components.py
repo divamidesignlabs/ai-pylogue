@@ -32,10 +32,11 @@ def _component_cls(item, base_cls, *extra_cls):
 
 def render_insight(item):
     variant = INSIGHT_VARIANTS.get(item.get("variant"), "")
+    size_cls = "canvas-insight--hero" if _span(item.get("col_span", 12), 1, 12, 12) >= 12 else "canvas-insight--compact"
     return Div(
-        H2(item.get("title", "Untitled"), cls="canvas-tile-title"),
-        Div(item.get("content", ""), cls="canvas-tile-body"),
-        cls=_component_cls(item, "canvas-tile", variant),
+        H2(item.get("title", "Untitled"), cls="canvas-insight-title"),
+        Div(item.get("content", ""), cls="canvas-insight-value"),
+        cls=_component_cls(item, "canvas-tile canvas-insight", variant, size_cls),
         style=_component_layout_style(item),
     )
 
