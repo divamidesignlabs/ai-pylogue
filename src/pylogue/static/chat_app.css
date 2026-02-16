@@ -10,8 +10,12 @@
   --line-strong: #d0d5dd;
 }
 
+*{
+  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+}
+
 body {
-  font-family: 'Sora', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
   background: var(--paper);
   color: var(--ink);
 }
@@ -245,6 +249,7 @@ textarea#msg,
   border: 1px solid var(--line-strong);
   background: #ffffff;
   color: var(--ink);
+  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 #msg:focus,
@@ -266,6 +271,7 @@ button#open-sidebar-btn,
 .uk-button,
 button {
   border-radius: 12px;
+  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 #new-chat-btn,

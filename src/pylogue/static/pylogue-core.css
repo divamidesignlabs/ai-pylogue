@@ -1,7 +1,13 @@
+/* Fonts for the entire application */
+*{
+  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+}
+
 html, body {
   margin: 0;
   background: #f8fafc;
   color: #0f172a;
+  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 html {
@@ -69,8 +75,14 @@ html {
 }
 
 .tool-status--done {
-  background: rgba(255, 255, 255, 0.7) 40%;
-  color: #14532d;
+  background: rgba(34, 197, 94, 0.1);
+  color: #0f172a;
+}
+
+.tool-status--done .tool-status-check {
+  color: #16a34a;
+  font-weight: 700;
+  margin-left: 0.25rem;
 }
 
 @keyframes tool-shimmer {
