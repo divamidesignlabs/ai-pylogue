@@ -34,12 +34,13 @@ def render_insight(item, current_canvas_id: str = "main"):
     variant = INSIGHT_VARIANTS.get(item.get("variant"), "")
     size_cls = "canvas-insight--hero" if _span(item.get("col_span", 12), 1, 12, 12) >= 12 else "canvas-insight--compact"
     layout_style = _component_layout_style(item)
-    body_cls = _component_cls(item, "canvas-tile canvas-insight", variant, size_cls)
     target_canvas = item.get("drilldown_canvas_id")
     if isinstance(target_canvas, str) and target_canvas.strip():
+        body_cls = _component_cls(item, "canvas-tile canvas-insight", variant, size_cls, "canvas-tile--linkable")
         target = target_canvas.strip()
         return A(
             Div(
+                Div(">", cls="canvas-tile-chevron"),
                 H2(item.get("title", "Untitled"), cls="canvas-insight-title"),
                 Div(item.get("content", ""), cls="canvas-insight-value"),
                 cls=body_cls,
@@ -48,6 +49,7 @@ def render_insight(item, current_canvas_id: str = "main"):
             cls="canvas-tile-link",
             style=layout_style,
         )
+    body_cls = _component_cls(item, "canvas-tile canvas-insight", variant, size_cls)
     return Div(
         H2(item.get("title", "Untitled"), cls="canvas-insight-title"),
         Div(item.get("content", ""), cls="canvas-insight-value"),

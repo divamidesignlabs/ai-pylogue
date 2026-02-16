@@ -101,6 +101,19 @@
   background: #ffffff;
   padding: 2rem;
 }
+.canvas-tile--linkable {
+  position: relative;
+}
+.canvas-tile-chevron {
+  position: absolute;
+  top: 0.9rem;
+  right: 1rem;
+  color: #64748b;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
 .canvas-insight-title {
   margin: 0;
   color: #667085;
