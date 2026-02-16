@@ -54,6 +54,18 @@ def publish_canvas_refresh() -> None:
         asyncio.run_coroutine_threadsafe(send("canvas_refresh"), loop)
 
 
+def publish_canvas_message(message: str) -> None:
+    if not _CANVAS_SUBSCRIBERS:
+        _LOG.info("Canvas message skipped: no subscribers")
+        return
+    loop = _CANVAS_LOOP or _resolve_loop()
+    if loop is None or not loop.is_running():
+        _LOG.warning("Canvas message dropped: no available event loop")
+        return
+    for send in list(_CANVAS_SUBSCRIBERS.values()):
+        asyncio.run_coroutine_threadsafe(send(message), loop)
+
+
 def _load_collections(path: Path | None = None) -> dict[str, list[dict]]:
     store_path = path or _STORE_PATH
     if not store_path.exists():

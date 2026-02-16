@@ -1,5 +1,6 @@
 from typing import Any, Callable
 from copy import deepcopy
+import json
 from pydantic_ai import RunContext
 
 
@@ -40,6 +41,7 @@ Behavior contract:
 9) For linking a card to another canvas, always use `link_canvas_item(source_canvas_id, item_id, target_canvas_id)`.
 10) For moving a card across canvases, always use `move_canvas_item(source_canvas_id, target_canvas_id, item_id)`.
 11) Never claim a move/update/create succeeded unless the tool returned success and a verification read confirms it.
+12) If user asks to open/switch/go to another canvas, call `navigate_to_canvas` to trigger UI navigation.
 
 Operational defaults:
 - New insight defaults: type=insight, col_span=4, row_span=1, variant=success.
@@ -59,6 +61,7 @@ def install_canvas_tools(
     agent,
     get_store: Callable[[str], Any],
     list_canvas_ids: Callable[[], list[str]],
+    publish_canvas_message: Callable[[str], None] | None = None,
 ) -> None:
     def _resolve_canvas_id(ctx: RunContext[Any], canvas_id: str = "") -> str:
         selected = (canvas_id or "").strip()
@@ -220,3 +223,25 @@ def install_canvas_tools(
             "source_item_id": item_id,
             "target_item_id": created.get("id"),
         }
+
+    @agent.tool
+    def navigate_to_canvas(
+        ctx: RunContext[Any],
+        canvas_id: str = "",
+        from_canvas_id: str = "",
+    ):
+        """Trigger navigation of the left canvas panel to another canvas."""
+        target = (canvas_id or "").strip()
+        if not target:
+            return {"ok": False, "error": "canvas_id is required"}
+        available = set(list_canvas_ids())
+        if target not in available:
+            return {"ok": False, "error": f"canvas '{target}' not found"}
+        source = _resolve_canvas_id(ctx, from_canvas_id)
+        page_href = f"/canvas/{target}?from={source}"
+        panel_href = f"/canvas/{target}/panel?from={source}"
+        if not callable(publish_canvas_message):
+            return {"ok": False, "error": "canvas navigation transport unavailable"}
+        payload = {"page_href": page_href, "panel_href": panel_href}
+        publish_canvas_message("canvas_navigate:" + json.dumps(payload, ensure_ascii=True))
+        return {"ok": True, "canvas_id": target}

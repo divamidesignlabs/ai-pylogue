@@ -1,4 +1,4 @@
-from fasthtml.common import A, Div, H2
+from fasthtml.common import A, Div, H2, Iframe
 
 INSIGHT_VARIANTS = {
     "success": "canvas-tile--insight-success",
@@ -73,8 +73,25 @@ def render_unknown(item, current_canvas_id: str = "main"):
     )
 
 
+def render_html(item, current_canvas_id: str = "main"):
+    _ = current_canvas_id
+    return Div(
+        H2(item.get("title", "Chart"), cls="canvas-tile-title"),
+        Iframe(
+            srcdoc=item.get("html", ""),
+            cls="canvas-html-frame",
+            loading="lazy",
+            referrerpolicy="no-referrer",
+            sandbox="allow-scripts allow-same-origin",
+        ),
+        cls=_component_cls(item, "canvas-tile", "canvas-tile--html"),
+        style=_component_layout_style(item),
+    )
+
+
 RENDERERS = {
     "insight": render_insight,
+    "html": render_html,
 }
 
 

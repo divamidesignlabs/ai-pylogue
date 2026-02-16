@@ -127,8 +127,8 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
 
         fig_payload = json.dumps(fig_json, cls=PlotlyJSONEncoder)
         script_html = (
-            "<div id='plot-wrap' style='width:100%;max-width:100%;margin:0;'>"
-            "<div id='plot-root' style='width:100%;'></div>"
+            "<div id='plot-wrap' style='width:100%;max-width:100%;height:100%;margin:0;'>"
+            "<div id='plot-root' style='width:100%;height:100%;'></div>"
             "</div>"
             "<script src='https://cdn.plot.ly/plotly-2.35.2.min.js'></script>"
             "<script>"
@@ -251,8 +251,12 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
             "}"
             "function mobileHeight(){"
             "if(explicitHeight) return defaultHeight;"
+            "const frameH=(window.frameElement&&window.frameElement.clientHeight)||0;"
+            "const viewH=window.innerHeight||0;"
+            "const h=Math.max(frameH, viewH);"
+            "if(h>0) return Math.max(280, Math.round(h-8));"
             "const w=Math.max(280, Math.min(window.innerWidth||1024, 1400));"
-            "return Math.max(280, Math.min(560, Math.round(w*0.6)));"
+            "return Math.max(280, Math.round(w*0.6));"
             "}"
             "function render(){"
             "normalizeUpdateMenus();"
@@ -283,8 +287,8 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
         srcdoc = (
             "<!doctype html><html><head><meta charset='utf-8'/>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'/>"
-            "<style>html,body{margin:0;padding:0;background:#fff;overflow:hidden;}"
-            "#plot-wrap{width:100%;max-width:100%;}</style>"
+            "<style>html,body{margin:0;padding:0;height:100%;background:#fff;overflow:hidden;}"
+            "#plot-wrap,#plot-root{width:100%;max-width:100%;height:100%;}</style>"
             "</head><body>"
             f"{script_html}"
             "</body></html>"

@@ -117,10 +117,10 @@ def resolve_tool_html(result):
     if isinstance(parsed_result, dict) and "_pylogue_html_id" in parsed_result:
         token = parsed_result.get("_pylogue_html_id")
         try:
-            from pylogue.embeds import take_html
+            from pylogue.embeds import get_html
         except Exception:
             return None
-        return take_html(token)
+        return get_html(token)
     return None
 
 
