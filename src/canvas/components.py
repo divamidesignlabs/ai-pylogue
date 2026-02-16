@@ -38,6 +38,8 @@ def render_insight(item, current_canvas_id: str = "main"):
     if isinstance(target_canvas, str) and target_canvas.strip():
         body_cls = _component_cls(item, "canvas-tile canvas-insight", variant, size_cls, "canvas-tile--linkable")
         target = target_canvas.strip()
+        page_href = f"/canvas/{target}?from={current_canvas_id}"
+        panel_href = f"/canvas/{target}/panel?from={current_canvas_id}"
         return A(
             Div(
                 Div(">", cls="canvas-tile-chevron"),
@@ -45,7 +47,11 @@ def render_insight(item, current_canvas_id: str = "main"):
                 Div(item.get("content", ""), cls="canvas-insight-value"),
                 cls=body_cls,
             ),
-            href=f"/canvas/{target}?from={current_canvas_id}",
+            href=page_href,
+            hx_get=panel_href,
+            hx_target="#canvas-panel",
+            hx_swap="outerHTML",
+            hx_push_url=page_href,
             cls="canvas-tile-link",
             style=layout_style,
         )
