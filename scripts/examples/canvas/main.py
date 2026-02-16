@@ -6,7 +6,11 @@ from pydantic_ai import Agent
 from canvas.agent_pack import build_canvas_instructions, install_canvas_tools
 from canvas.components import RENDERERS
 from canvas.main import main as canvas_app_factory
-from canvas.state import CANVAS_STORE, configure_canvas_store
+from canvas.state import (
+    configure_canvas_store,
+    get_canvas_store,
+    list_canvas_ids,
+)
 from pylogue.integrations.pydantic_ai import PydanticAIResponder
 
 load_dotenv(override=True)
@@ -29,7 +33,7 @@ agent = Agent(
     output_retries=4,
 )
 
-install_canvas_tools(agent, CANVAS_STORE)
+install_canvas_tools(agent, get_canvas_store, list_canvas_ids)
 
 
 def _app_factory():

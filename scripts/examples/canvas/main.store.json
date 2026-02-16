@@ -1,0 +1,112 @@
+{
+  "canvases": {
+    "main": [
+      {
+        "id": "c1",
+        "type": "insight",
+        "title": "Welcome",
+        "item_description": "High-level welcome insight tile for canvas readiness.",
+        "content": "100% of users find this canvas useful.",
+        "col_span": 12,
+        "row_span": 1,
+        "variant": "success",
+        "drilldown_canvas_id": "details"
+      },
+      {
+        "id": "c2",
+        "type": "insight",
+        "title": "Welcome",
+        "item_description": "Caution-level insight showing moderate user value.",
+        "content": "20% of users find this canvas useful.",
+        "col_span": 6,
+        "row_span": 1,
+        "variant": "caution"
+      },
+      {
+        "id": "c3",
+        "type": "insight",
+        "title": "Yolo",
+        "item_description": "Danger-level insight showing low user value.",
+        "content": "0% of users find this canvas useful.",
+        "col_span": 6,
+        "row_span": 1,
+        "variant": "danger"
+      },
+      {
+        "id": "c4",
+        "type": "insight",
+        "title": "Hello",
+        "item_description": "insight card: Hello",
+        "content": "world",
+        "col_span": 12,
+        "row_span": 1,
+        "variant": "success"
+      },
+      {
+        "id": "c5",
+        "type": "insight",
+        "title": "Urgent",
+        "item_description": "Check your mail and new random mails",
+        "content": "Check your mail",
+        "col_span": 12,
+        "row_span": 1,
+        "variant": "danger",
+        "drilldown_canvas_id": "mails"
+      }
+    ],
+    "details": [
+      {
+        "id": "c1",
+        "type": "insight",
+        "title": "Revenue Target vs Actual",
+        "item_description": "Drilldown canvas for detailed revenue status.",
+        "content": "$620K / $1M",
+        "col_span": 12,
+        "row_span": 1,
+        "variant": "success"
+      },
+      {
+        "id": "c2",
+        "type": "insight",
+        "title": "Urgent",
+        "item_description": "Items requiring immediate attention.",
+        "content": "2 renewals pending executive approval.",
+        "col_span": 12,
+        "row_span": 1,
+        "variant": "danger"
+      }
+    ],
+    "mails": [
+      {
+        "type": "insight",
+        "content": "Subject: Meeting Reminder<br>Body: Just a reminder about our meeting tomorrow at 10 AM.",
+        "title": "Meeting Reminder",
+        "col_span": 12,
+        "row_span": 2,
+        "variant": "success",
+        "item_description": "insight card: Meeting Reminder",
+        "id": "c1"
+      },
+      {
+        "content": "Subject: Project Update<br>Body: Here's the latest update on the Project X. Please review the attached document.",
+        "title": "Project Update",
+        "type": "insight",
+        "col_span": 12,
+        "row_span": 2,
+        "variant": "success",
+        "item_description": "insight card: Project Update",
+        "id": "c2"
+      },
+      {
+        "type": "insight",
+        "content": "Subject: Newsletter<br>Body: Check out our latest newsletter for exciting updates and tips!",
+        "title": "Newsletter",
+        "col_span": 12,
+        "row_span": 2,
+        "variant": "success",
+        "item_description": "insight card: Newsletter",
+        "id": "c3"
+      }
+    ]
+  }
+}

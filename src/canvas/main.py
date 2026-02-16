@@ -1,9 +1,10 @@
-from fasthtml.common import Body, Div, Form, H2, Link, Meta, Script, Title
+from fasthtml.common import A, Body, Div, Form, H2, Link, Meta, Script, Title
 from monsterui.all import Button, ButtonT, FastHTML as MUFastHTML
 import asyncio
 import logging
 import os
 from pathlib import Path
+from starlette.requests import Request
 from starlette.responses import FileResponse
 
 from pylogue.core import (
@@ -17,7 +18,7 @@ from pylogue.core import (
 )
 from canvas.components import render_canvas
 from canvas.state import (
-    CANVAS_STORE,
+    get_canvas_store,
     subscribe_canvas,
     unsubscribe_canvas,
 )
@@ -26,16 +27,48 @@ CANVAS_STATIC_DIR = Path(__file__).resolve().parent / "static"
 _LOG = logging.getLogger(__name__)
 
 
-def _canvas_panel(canvas_items, oob: bool = False):
+def _canvas_breadcrumbs(canvas_id: str, parent_canvas_id: str | None = None):
+    current = canvas_id.strip() or "main"
+    if current == "main":
+        return Div(
+            A("Main", href="/canvas/main", cls="text-sm font-semibold text-slate-700"),
+            cls="flex items-center gap-2",
+        )
+    parent = (parent_canvas_id or "main").strip() or "main"
+    if parent == "main":
+        return Div(
+            A("Main", href="/canvas/main", cls="text-sm text-slate-600 hover:text-slate-900"),
+            Div("/", cls="text-slate-400"),
+            Div(current, cls="text-sm font-semibold text-slate-700"),
+            cls="flex items-center gap-2",
+        )
+    return Div(
+        A("Main", href="/canvas/main", cls="text-sm text-slate-600 hover:text-slate-900"),
+        Div("/", cls="text-slate-400"),
+        A(parent, href=f"/canvas/{parent}", cls="text-sm text-slate-600 hover:text-slate-900"),
+        Div("/", cls="text-slate-400"),
+        Div(current, cls="text-sm font-semibold text-slate-700"),
+        cls="flex items-center gap-2",
+    )
+
+
+def _canvas_panel(canvas_id: str, canvas_items, parent_canvas_id: str | None = None, oob: bool = False):
     attrs = {}
     if oob:
         attrs["hx_swap_oob"] = "outerHTML"
+    panel_href = f"/canvas/{canvas_id}/panel"
+    if parent_canvas_id:
+        panel_href = f"{panel_href}?from={parent_canvas_id}"
     return Div(
-        H2("Canvas", cls="text-lg font-semibold text-slate-700 mb-3"),
-        Div(render_canvas(canvas_items), id="canvas-root", cls="canvas-empty canvas-root"),
+        Div(
+            H2("Canvas", cls="text-lg font-semibold text-slate-700"),
+            _canvas_breadcrumbs(canvas_id, parent_canvas_id=parent_canvas_id),
+            cls="flex items-center justify-between mb-3",
+        ),
+        Div(render_canvas(canvas_items, current_canvas_id=canvas_id), id="canvas-root", cls="canvas-empty canvas-root"),
         cls="canvas-left",
         id="canvas-panel",
-        hx_get="/canvas/panel",
+        hx_get=panel_href,
         hx_trigger="canvas_refresh from:body",
         hx_swap="outerHTML",
         **attrs,
@@ -71,9 +104,9 @@ def _chat_panel():
     )
 
 
-def _layout_shell(canvas_items):
+def _layout_shell(canvas_id: str, canvas_items, parent_canvas_id: str | None = None):
     return Div(
-        _canvas_panel(canvas_items),
+        _canvas_panel(canvas_id, canvas_items, parent_canvas_id=parent_canvas_id),
         _chat_panel(),
         cls="canvas-shell",
     )
@@ -123,19 +156,27 @@ def main(responder=None, responder_factory=None):
         return FileResponse(CANVAS_STATIC_DIR / "canvas-ws.js")
 
     @app.route("/")
-    def home():
-        canvas_items = CANVAS_STORE.list_items()
+    def home(request: Request):
+        return canvas_home(request, "main")
+
+    @app.route("/canvas/{canvas_id}")
+    def canvas_home(request: Request, canvas_id: str):
+        request.session["canvas_current_id"] = canvas_id
+        store = get_canvas_store(canvas_id)
+        canvas_items = store.list_items()
+        parent_canvas_id = request.query_params.get("from")
         return (
-            Title("Pylogue Canvas MVP"),
+            Title(f"Pylogue Canvas MVP - {canvas_id}"),
             Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
-            Body(_layout_shell(canvas_items)),
+            Body(_layout_shell(canvas_id, canvas_items, parent_canvas_id=parent_canvas_id)),
         )
 
-    @app.route("/canvas/panel")
-    def canvas_panel():
-        items = CANVAS_STORE.list_items()
+    @app.route("/canvas/{canvas_id}/panel")
+    def canvas_panel(request: Request, canvas_id: str):
+        items = get_canvas_store(canvas_id).list_items()
+        parent_canvas_id = request.query_params.get("from")
         _LOG.info("Canvas panel render requested: items=%s", len(items))
-        return _canvas_panel(items)
+        return _canvas_panel(canvas_id, items, parent_canvas_id=parent_canvas_id)
 
     return app
 
