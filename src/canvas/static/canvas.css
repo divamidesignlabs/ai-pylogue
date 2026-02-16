@@ -118,11 +118,16 @@
 }
 .canvas-insight--compact .canvas-insight-title {
   font-size: 0.9rem;
+  margin-top: 0;
 }
 .canvas-insight--compact .canvas-insight-value {
-  margin-top: 1rem;
   font-size: 1.1rem;
-  line-height: 1.25;
+  line-height: 1.2;
+}
+.canvas-insight--compact {
+  justify-content: flex-start;
+  padding-top: 1.25rem;
+  padding-bottom: 2rem;
 }
 .canvas-insight--hero .canvas-insight-title {
   font-size: var(--canvas-font-size-insight-label);
