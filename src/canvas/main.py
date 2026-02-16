@@ -14,11 +14,9 @@ from pylogue.core import (
     render_input,
 )
 from canvas.components import render_canvas
-from canvas.crud import CanvasItemCRUD
-from canvas.data import CANVAS_ITEMS
+from canvas.state import CANVAS_STORE
 
 CANVAS_STATIC_DIR = Path(__file__).resolve().parent / "static"
-CANVAS_STORE = CanvasItemCRUD(CANVAS_ITEMS)
 
 
 def _canvas_panel(canvas_items):
@@ -26,6 +24,10 @@ def _canvas_panel(canvas_items):
         H2("Canvas", cls="text-lg font-semibold text-slate-700 mb-3"),
         Div(render_canvas(canvas_items), id="canvas-root", cls="canvas-empty canvas-root"),
         cls="canvas-left",
+        id="canvas-panel",
+        hx_get="/canvas/panel",
+        hx_trigger="load, every 2s",
+        hx_swap="outerHTML",
     )
 
 
@@ -96,6 +98,10 @@ def main(responder=None, responder_factory=None):
             Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
             Body(_layout_shell(canvas_items)),
         )
+
+    @app.route("/canvas/panel")
+    def canvas_panel():
+        return _canvas_panel(CANVAS_STORE.list_items())
 
     return app
 

@@ -23,6 +23,9 @@ class CanvasItemCRUD:
     def __init__(self, initial_items: list[dict[str, Any]] | None = None):
         self._items = deepcopy(initial_items or [])
 
+    def list_items(self) -> list[dict[str, Any]]:
+        return deepcopy(self._items)
+
     def list_item_summaries(self, limit: int = 12, offset: int = 0) -> dict[str, Any]:
         return self._list_item_summaries(limit=limit, offset=offset, fields=self.GET_ITEM_DEFAULT_FIELDS)
 
