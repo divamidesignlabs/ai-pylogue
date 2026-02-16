@@ -86,7 +86,7 @@ def app_factory(
         [
             Link(
                 rel="stylesheet",
-                href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap",
+                href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@300;400;500;600;700&display=swap",
             ),
             Link(rel="stylesheet", href="/static/chat_app.css"),
             Script(src="/static/chat_app.js", type="module"),
@@ -257,7 +257,7 @@ def app_factory(
                 cls="sidebar-header",
             ),
             Button(
-                UkIcon("plus"),
+                # UkIcon("plus"),
                 Span("New chat"),
                 cls=(ButtonT.secondary, "w-full justify-center"),
                 type="button",

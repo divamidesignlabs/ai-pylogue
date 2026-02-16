@@ -96,9 +96,10 @@ def format_tool_status_done(args, call_id: str | None):
         safe_label = "Completed"
     status_id = safe_dom_id(f"tool-status-{call_id or ''}")
     safe_label_escaped = html.escape(safe_label)
+    # Show process name + highlighted completion status
     return (
         f'<div class="tool-status-update" data-target-id="{status_id}">'
-        f"{safe_label_escaped}</div><br />\n\n"
+        f'{safe_label_escaped} <span class="tool-status-check">✓Completed</span></div><br />\n\n'
     )
 
 
