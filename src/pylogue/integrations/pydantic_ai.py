@@ -254,7 +254,7 @@ class PydanticAIResponder:
                 if tool_name or args or result:
                     resolved_html = _resolve_tool_html(result)
                     if not self.show_tool_details:
-                        yield _format_tool_status_done(args, call_id)
+                        yield _format_tool_status_done(args, call_id, tool_name)
                     if resolved_html:
                         yield _wrap_tool_html(resolved_html)
                     elif _should_render_tool_result_raw(tool_name, result):
