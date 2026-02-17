@@ -282,6 +282,22 @@ html {
   padding-left: 1.25rem;
 }
 
+.marked ul {
+  list-style: disc;
+}
+
+.marked ol {
+  list-style: decimal;
+}
+
+.marked li {
+  display: list-item;
+}
+
+.marked li::marker {
+  color: currentColor;
+}
+
 .marked hr {
   border: 0;
   border-top: 1px solid #e2e8f0;
@@ -301,6 +317,11 @@ html {
   color: #475569;
   margin: 14px 0;
   font-size: 0.85rem;
+}
+
+.marked details.tool-call,
+.marked details.tool-call * {
+  font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
 }
 
 .marked details.tool-call summary {
