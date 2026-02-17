@@ -1,4 +1,4 @@
-from fasthtml.common import A, Div, H2
+from fasthtml.common import A, Button, Div, H2, Iframe
 
 INSIGHT_VARIANTS = {
     "success": "canvas-tile--insight-success",
@@ -30,6 +30,29 @@ def _component_cls(item, base_cls, *extra_cls):
     return " ".join(parts)
 
 
+def _remove_card_control():
+    return Button(
+        type="button",
+        cls="canvas-tile-remove",
+        uk_icon="close",
+        aria_label="Remove card",
+        title="Remove card",
+        onclick=(
+            "event.stopPropagation();"
+            "const tile=this.closest('.canvas-tile-link')||this.closest('.canvas-tile');"
+            "if(tile){tile.remove();}"
+            "return;"
+        ),
+    )
+
+
+def _item_id_badge(item):
+    item_id = str(item.get("id", "")).strip()
+    if not item_id:
+        return None
+    return Div(item_id, cls="canvas-item-id")
+
+
 def render_insight(item, current_canvas_id: str = "main"):
     variant = INSIGHT_VARIANTS.get(item.get("variant"), "")
     size_cls = "canvas-insight--hero" if _span(item.get("col_span", 12), 1, 12, 12) >= 12 else "canvas-insight--compact"
@@ -42,9 +65,11 @@ def render_insight(item, current_canvas_id: str = "main"):
         panel_href = f"/canvas/{target}/panel?from={current_canvas_id}"
         return A(
             Div(
+                _remove_card_control(),
                 Div(">", cls="canvas-tile-chevron"),
                 H2(item.get("title", "Untitled"), cls="canvas-insight-title"),
                 Div(item.get("content", ""), cls="canvas-insight-value"),
+                _item_id_badge(item),
                 cls=body_cls,
             ),
             href=page_href,
@@ -57,8 +82,10 @@ def render_insight(item, current_canvas_id: str = "main"):
         )
     body_cls = _component_cls(item, "canvas-tile canvas-insight", variant, size_cls)
     return Div(
+        _remove_card_control(),
         H2(item.get("title", "Untitled"), cls="canvas-insight-title"),
         Div(item.get("content", ""), cls="canvas-insight-value"),
+        _item_id_badge(item),
         cls=body_cls,
         style=layout_style,
     )
@@ -66,15 +93,36 @@ def render_insight(item, current_canvas_id: str = "main"):
 
 def render_unknown(item, current_canvas_id: str = "main"):
     return Div(
+        _remove_card_control(),
         H2(item.get("title", "Unsupported item"), cls="canvas-tile-title"),
         Div(f"Unknown type: {item.get('type', 'none')}", cls="canvas-tile-body canvas-tile-body--unknown"),
+        _item_id_badge(item),
         cls=_component_cls(item, "canvas-tile", "canvas-tile--unknown"),
+        style=_component_layout_style(item),
+    )
+
+
+def render_html(item, current_canvas_id: str = "main"):
+    _ = current_canvas_id
+    return Div(
+        _remove_card_control(),
+        H2(item.get("title", "Chart"), cls="canvas-tile-title"),
+        Iframe(
+            srcdoc=item.get("html", ""),
+            cls="canvas-html-frame",
+            loading="lazy",
+            referrerpolicy="no-referrer",
+            sandbox="allow-scripts allow-same-origin",
+        ),
+        _item_id_badge(item),
+        cls=_component_cls(item, "canvas-tile", "canvas-tile--html"),
         style=_component_layout_style(item),
     )
 
 
 RENDERERS = {
     "insight": render_insight,
+    "html": render_html,
 }
 
 

@@ -30,3 +30,14 @@ def take_html(token: str) -> Optional[str]:
         return None
     _, html = entry
     return html
+
+
+def get_html(token: str) -> Optional[str]:
+    """Retrieve HTML by token without removing it."""
+    if not token:
+        return None
+    entry = _HTML_CACHE.get(token)
+    if not entry:
+        return None
+    _, html = entry
+    return html

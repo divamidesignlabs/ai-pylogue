@@ -2,7 +2,7 @@
   "canvases": {
     "main": [
       {
-        "id": "c1",
+        "id": "c1.i1",
         "type": "insight",
         "title": "Welcome",
         "item_description": "High-level welcome insight tile for canvas readiness.",
@@ -13,7 +13,7 @@
         "drilldown_canvas_id": "details"
       },
       {
-        "id": "c2",
+        "id": "c1.i2",
         "type": "insight",
         "title": "Welcome",
         "item_description": "Caution-level insight showing moderate user value.",
@@ -24,7 +24,7 @@
         "canvas_id": "main"
       },
       {
-        "id": "c3",
+        "id": "c1.i3",
         "type": "insight",
         "title": "Alert",
         "item_description": "Danger-level insight showing low user value.",
@@ -34,7 +34,7 @@
         "variant": "danger"
       },
       {
-        "id": "c4",
+        "id": "c1.i4",
         "type": "insight",
         "title": "Hello",
         "item_description": "insight card: Hello",
@@ -44,7 +44,7 @@
         "variant": "success"
       },
       {
-        "id": "c5",
+        "id": "c1.i5",
         "type": "insight",
         "title": "Urgent",
         "item_description": "Check your mail and new random mails",
@@ -63,13 +63,24 @@
         "row_span": 1,
         "variant": "danger",
         "canvas_id": "main",
-        "id": "c6",
+        "id": "c1.i6",
         "drilldown_canvas_id": "approvals"
+      },
+      {
+        "row_span": 1,
+        "title": "Hi",
+        "component_type": "insight",
+        "col_span": 4,
+        "content": "hi",
+        "type": "insight",
+        "variant": "success",
+        "item_description": "insight card: Hi",
+        "id": "c1.i7"
       }
     ],
     "details": [
       {
-        "id": "c1",
+        "id": "c2.i1",
         "type": "insight",
         "title": "Revenue Target vs Actual",
         "item_description": "Drilldown canvas for detailed revenue status.",
@@ -87,7 +98,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c2"
+        "id": "c2.i2"
       },
       {
         "title": "Growth Rate",
@@ -98,7 +109,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c3"
+        "id": "c2.i3"
       },
       {
         "item_description": "This is dummy customer acquisition data.",
@@ -109,7 +120,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c4"
+        "id": "c2.i4"
       },
       {
         "title": "Q1 Revenue",
@@ -120,7 +131,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c5"
+        "id": "c2.i5"
       },
       {
         "content": "110%",
@@ -131,7 +142,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c6"
+        "id": "c2.i6"
       },
       {
         "item_description": "This is dummy customer acquisition data for Q1.",
@@ -142,7 +153,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c7"
+        "id": "c2.i7"
       },
       {
         "component_type": "insight",
@@ -153,7 +164,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c8"
+        "id": "c2.i8"
       },
       {
         "variant": "caution",
@@ -164,7 +175,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c9"
+        "id": "c2.i9"
       },
       {
         "title": "Project Gamma Revenue",
@@ -175,7 +186,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c10"
+        "id": "c2.i10"
       },
       {
         "item_description": "New customers acquired through marketing campaign A.",
@@ -186,7 +197,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c11"
+        "id": "c2.i11"
       },
       {
         "item_description": "New customers acquired through marketing campaign B.",
@@ -197,7 +208,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c12"
+        "id": "c2.i12"
       },
       {
         "item_description": "New customers acquired through marketing campaign C.",
@@ -208,7 +219,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c13"
+        "id": "c2.i13"
       },
       {
         "component_type": "insight",
@@ -219,7 +230,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c14"
+        "id": "c2.i14"
       },
       {
         "content": "20%",
@@ -230,7 +241,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c15"
+        "id": "c2.i15"
       },
       {
         "title": "Project Gamma Growth Rate",
@@ -241,7 +252,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c16"
+        "id": "c2.i16"
       },
       {
         "item_description": "Overall company revenue projection.",
@@ -252,40 +263,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c17"
-      },
-      {
-        "component_type": "insight",
-        "title": "Random Email 1",
-        "content": "user1@example.com",
-        "item_description": "This is a random email.",
-        "type": "insight",
-        "col_span": 4,
-        "row_span": 1,
-        "variant": "success",
-        "id": "c18"
-      },
-      {
-        "component_type": "insight",
-        "item_description": "This is a random email.",
-        "title": "Random Email 2",
-        "content": "user2@example.com",
-        "type": "insight",
-        "col_span": 4,
-        "row_span": 1,
-        "variant": "success",
-        "id": "c19"
-      },
-      {
-        "component_type": "insight",
-        "item_description": "This is a random email.",
-        "content": "user3@example.com",
-        "title": "Random Email 3",
-        "type": "insight",
-        "col_span": 4,
-        "row_span": 1,
-        "variant": "success",
-        "id": "c20"
+        "id": "c2.i17"
       }
     ],
     "mails": [
@@ -295,9 +273,9 @@
         "title": "Meeting Reminder",
         "col_span": 12,
         "row_span": 2,
-        "variant": "success",
+        "variant": "danger",
         "item_description": "insight card: Meeting Reminder",
-        "id": "c1"
+        "id": "c3.i1"
       },
       {
         "content": "Subject: Project Update<br>Body: Here's the latest update on the Project X. Please review the attached document.",
@@ -305,9 +283,9 @@
         "type": "insight",
         "col_span": 12,
         "row_span": 2,
-        "variant": "success",
+        "variant": "danger",
         "item_description": "insight card: Project Update",
-        "id": "c2"
+        "id": "c3.i2"
       },
       {
         "type": "insight",
@@ -315,9 +293,9 @@
         "title": "Newsletter",
         "col_span": 12,
         "row_span": 2,
-        "variant": "success",
+        "variant": "danger",
         "item_description": "insight card: Newsletter",
-        "id": "c3"
+        "id": "c3.i3"
       },
       {
         "component_type": "insight",
@@ -327,8 +305,8 @@
         "type": "insight",
         "col_span": 12,
         "row_span": 2,
-        "variant": "success",
-        "id": "c4"
+        "variant": "danger",
+        "id": "c3.i4"
       },
       {
         "content": "This is the content of the third dummy email.",
@@ -338,8 +316,8 @@
         "type": "insight",
         "col_span": 12,
         "row_span": 2,
-        "variant": "success",
-        "id": "c5"
+        "variant": "danger",
+        "id": "c3.i5"
       },
       {
         "component_type": "insight",
@@ -349,8 +327,8 @@
         "type": "insight",
         "col_span": 12,
         "row_span": 2,
-        "variant": "success",
-        "id": "c6"
+        "variant": "danger",
+        "id": "c3.i6"
       },
       {
         "content": "This is the content of the fifth dummy email.",
@@ -359,8 +337,8 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "variant": "success",
-        "id": "c7"
+        "variant": "danger",
+        "id": "c3.i7"
       },
       {
         "content": "This is the content of the sixth dummy email.",
@@ -369,8 +347,8 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "variant": "success",
-        "id": "c8"
+        "variant": "danger",
+        "id": "c3.i8"
       },
       {
         "content": "This is the content of the seventh dummy email.",
@@ -379,8 +357,8 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "variant": "success",
-        "id": "c9"
+        "variant": "danger",
+        "id": "c3.i9"
       },
       {
         "title": "Team Leaves",
@@ -389,8 +367,18 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
+        "variant": "danger",
+        "id": "c3.i10"
+      },
+      {
+        "type": "html",
+        "title": "Random Scatter Plot",
+        "item_description": "chart card: Random Scatter Plot",
+        "html": "<iframe srcdoc=\"&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&#x27;utf-8&#x27;/&gt;&lt;meta name=&#x27;viewport&#x27; content=&#x27;width=device-width,initial-scale=1&#x27;/&gt;&lt;style&gt;html,body{margin:0;padding:0;height:100%;background:#fff;overflow:hidden;}#plot-wrap,#plot-root{width:100%;max-width:100%;height:100%;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;div id=&#x27;plot-wrap&#x27; style=&#x27;width:100%;max-width:100%;height:100%;margin:0;&#x27;&gt;&lt;div id=&#x27;plot-root&#x27; style=&#x27;width:100%;height:100%;&#x27;&gt;&lt;/div&gt;&lt;/div&gt;&lt;script src=&#x27;https://cdn.plot.ly/plotly-2.35.2.min.js&#x27;&gt;&lt;/script&gt;&lt;script&gt;const fig={&quot;data&quot;: [{&quot;hovertemplate&quot;: &quot;x=%{x}&lt;br&gt;y=%{y}&lt;extra&gt;&lt;/extra&gt;&quot;, &quot;legendgroup&quot;: &quot;&quot;, &quot;marker&quot;: {&quot;color&quot;: &quot;#636efa&quot;, &quot;symbol&quot;: &quot;circle&quot;}, &quot;mode&quot;: &quot;markers&quot;, &quot;name&quot;: &quot;&quot;, &quot;orientation&quot;: &quot;v&quot;, &quot;showlegend&quot;: false, &quot;x&quot;: {&quot;dtype&quot;: &quot;f8&quot;, &quot;bdata&quot;: &quot;zKxwxE8Yzj9I9NjbFaHOPxCQ2+hOYaQ/tqOeQgj16z8g9w+ubLTqPyijMYquq74/hkUQnDVo0j+Y+ZczQV/lP3xsiWORucQ/pLR7ahB84j8=&quot;}, &quot;xaxis&quot;: &quot;x&quot;, &quot;y&quot;: {&quot;dtype&quot;: &quot;f8&quot;, &quot;bdata&quot;: &quot;zipnGXRt2D+abvZX/hPcP551VkkA7+I/4AtNbtWksz+BFBvz4jruP/QhoiF3f+I/qmHf+eZQ3j+YOnlV6iPiPwQcpCD8KcY/gaPb9+jq7z8=&quot;}, &quot;yaxis&quot;: &quot;y&quot;, &quot;type&quot;: &quot;scatter&quot;}], &quot;layout&quot;: {&quot;template&quot;: {&quot;data&quot;: {&quot;histogram2dcontour&quot;: [{&quot;type&quot;: &quot;histogram2dcontour&quot;, &quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}, &quot;colorscale&quot;: [[0.0, &quot;#0d0887&quot;], [0.1111111111111111, &quot;#46039f&quot;], [0.2222222222222222, &quot;#7201a8&quot;], [0.3333333333333333, &quot;#9c179e&quot;], [0.4444444444444444, &quot;#bd3786&quot;], [0.5555555555555556, &quot;#d8576b&quot;], [0.6666666666666666, &quot;#ed7953&quot;], [0.7777777777777778, &quot;#fb9f3a&quot;], [0.8888888888888888, &quot;#fdca26&quot;], [1.0, &quot;#f0f921&quot;]]}], &quot;choropleth&quot;: [{&quot;type&quot;: &quot;choropleth&quot;, &quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}], &quot;histogram2d&quot;: [{&quot;type&quot;: &quot;histogram2d&quot;, &quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}, &quot;colorscale&quot;: [[0.0, &quot;#0d0887&quot;], [0.1111111111111111, &quot;#46039f&quot;], [0.2222222222222222, &quot;#7201a8&quot;], [0.3333333333333333, &quot;#9c179e&quot;], [0.4444444444444444, &quot;#bd3786&quot;], [0.5555555555555556, &quot;#d8576b&quot;], [0.6666666666666666, &quot;#ed7953&quot;], [0.7777777777777778, &quot;#fb9f3a&quot;], [0.8888888888888888, &quot;#fdca26&quot;], [1.0, &quot;#f0f921&quot;]]}], &quot;heatmap&quot;: [{&quot;type&quot;: &quot;heatmap&quot;, &quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}, &quot;colorscale&quot;: [[0.0, &quot;#0d0887&quot;], [0.1111111111111111, &quot;#46039f&quot;], [0.2222222222222222, &quot;#7201a8&quot;], [0.3333333333333333, &quot;#9c179e&quot;], [0.4444444444444444, &quot;#bd3786&quot;], [0.5555555555555556, &quot;#d8576b&quot;], [0.6666666666666666, &quot;#ed7953&quot;], [0.7777777777777778, &quot;#fb9f3a&quot;], [0.8888888888888888, &quot;#fdca26&quot;], [1.0, &quot;#f0f921&quot;]]}], &quot;contourcarpet&quot;: [{&quot;type&quot;: &quot;contourcarpet&quot;, &quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}], &quot;contour&quot;: [{&quot;type&quot;: &quot;contour&quot;, &quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}, &quot;colorscale&quot;: [[0.0, &quot;#0d0887&quot;], [0.1111111111111111, &quot;#46039f&quot;], [0.2222222222222222, &quot;#7201a8&quot;], [0.3333333333333333, &quot;#9c179e&quot;], [0.4444444444444444, &quot;#bd3786&quot;], [0.5555555555555556, &quot;#d8576b&quot;], [0.6666666666666666, &quot;#ed7953&quot;], [0.7777777777777778, &quot;#fb9f3a&quot;], [0.8888888888888888, &quot;#fdca26&quot;], [1.0, &quot;#f0f921&quot;]]}], &quot;surface&quot;: [{&quot;type&quot;: &quot;surface&quot;, &quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}, &quot;colorscale&quot;: [[0.0, &quot;#0d0887&quot;], [0.1111111111111111, &quot;#46039f&quot;], [0.2222222222222222, &quot;#7201a8&quot;], [0.3333333333333333, &quot;#9c179e&quot;], [0.4444444444444444, &quot;#bd3786&quot;], [0.5555555555555556, &quot;#d8576b&quot;], [0.6666666666666666, &quot;#ed7953&quot;], [0.7777777777777778, &quot;#fb9f3a&quot;], [0.8888888888888888, &quot;#fdca26&quot;], [1.0, &quot;#f0f921&quot;]]}], &quot;mesh3d&quot;: [{&quot;type&quot;: &quot;mesh3d&quot;, &quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}], &quot;scatter&quot;: [{&quot;fillpattern&quot;: {&quot;fillmode&quot;: &quot;overlay&quot;, &quot;size&quot;: 10, &quot;solidity&quot;: 0.2}, &quot;type&quot;: &quot;scatter&quot;}], &quot;parcoords&quot;: [{&quot;type&quot;: &quot;parcoords&quot;, &quot;line&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;scatterpolargl&quot;: [{&quot;type&quot;: &quot;scatterpolargl&quot;, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;bar&quot;: [{&quot;error_x&quot;: {&quot;color&quot;: &quot;#2a3f5f&quot;}, &quot;error_y&quot;: {&quot;color&quot;: &quot;#2a3f5f&quot;}, &quot;marker&quot;: {&quot;line&quot;: {&quot;color&quot;: &quot;#E5ECF6&quot;, &quot;width&quot;: 0.5}, &quot;pattern&quot;: {&quot;fillmode&quot;: &quot;overlay&quot;, &quot;size&quot;: 10, &quot;solidity&quot;: 0.2}}, &quot;type&quot;: &quot;bar&quot;}], &quot;scattergeo&quot;: [{&quot;type&quot;: &quot;scattergeo&quot;, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;scatterpolar&quot;: [{&quot;type&quot;: &quot;scatterpolar&quot;, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;histogram&quot;: [{&quot;marker&quot;: {&quot;pattern&quot;: {&quot;fillmode&quot;: &quot;overlay&quot;, &quot;size&quot;: 10, &quot;solidity&quot;: 0.2}}, &quot;type&quot;: &quot;histogram&quot;}], &quot;scattergl&quot;: [{&quot;type&quot;: &quot;scattergl&quot;, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;scatter3d&quot;: [{&quot;type&quot;: &quot;scatter3d&quot;, &quot;line&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;scattermap&quot;: [{&quot;type&quot;: &quot;scattermap&quot;, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;scattermapbox&quot;: [{&quot;type&quot;: &quot;scattermapbox&quot;, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;scatterternary&quot;: [{&quot;type&quot;: &quot;scatterternary&quot;, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;scattercarpet&quot;: [{&quot;type&quot;: &quot;scattercarpet&quot;, &quot;marker&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}}], &quot;carpet&quot;: [{&quot;aaxis&quot;: {&quot;endlinecolor&quot;: &quot;#2a3f5f&quot;, &quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;minorgridcolor&quot;: &quot;white&quot;, &quot;startlinecolor&quot;: &quot;#2a3f5f&quot;}, &quot;baxis&quot;: {&quot;endlinecolor&quot;: &quot;#2a3f5f&quot;, &quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;minorgridcolor&quot;: &quot;white&quot;, &quot;startlinecolor&quot;: &quot;#2a3f5f&quot;}, &quot;type&quot;: &quot;carpet&quot;}], &quot;table&quot;: [{&quot;cells&quot;: {&quot;fill&quot;: {&quot;color&quot;: &quot;#EBF0F8&quot;}, &quot;line&quot;: {&quot;color&quot;: &quot;white&quot;}}, &quot;header&quot;: {&quot;fill&quot;: {&quot;color&quot;: &quot;#C8D4E3&quot;}, &quot;line&quot;: {&quot;color&quot;: &quot;white&quot;}}, &quot;type&quot;: &quot;table&quot;}], &quot;barpolar&quot;: [{&quot;marker&quot;: {&quot;line&quot;: {&quot;color&quot;: &quot;#E5ECF6&quot;, &quot;width&quot;: 0.5}, &quot;pattern&quot;: {&quot;fillmode&quot;: &quot;overlay&quot;, &quot;size&quot;: 10, &quot;solidity&quot;: 0.2}}, &quot;type&quot;: &quot;barpolar&quot;}], &quot;pie&quot;: [{&quot;automargin&quot;: true, &quot;type&quot;: &quot;pie&quot;}]}, &quot;layout&quot;: {&quot;autotypenumbers&quot;: &quot;strict&quot;, &quot;colorway&quot;: [&quot;#636efa&quot;, &quot;#EF553B&quot;, &quot;#00cc96&quot;, &quot;#ab63fa&quot;, &quot;#FFA15A&quot;, &quot;#19d3f3&quot;, &quot;#FF6692&quot;, &quot;#B6E880&quot;, &quot;#FF97FF&quot;, &quot;#FECB52&quot;], &quot;font&quot;: {&quot;color&quot;: &quot;#2a3f5f&quot;}, &quot;hovermode&quot;: &quot;closest&quot;, &quot;hoverlabel&quot;: {&quot;align&quot;: &quot;left&quot;}, &quot;paper_bgcolor&quot;: &quot;white&quot;, &quot;plot_bgcolor&quot;: &quot;#E5ECF6&quot;, &quot;polar&quot;: {&quot;bgcolor&quot;: &quot;#E5ECF6&quot;, &quot;angularaxis&quot;: {&quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;ticks&quot;: &quot;&quot;}, &quot;radialaxis&quot;: {&quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;ticks&quot;: &quot;&quot;}}, &quot;ternary&quot;: {&quot;bgcolor&quot;: &quot;#E5ECF6&quot;, &quot;aaxis&quot;: {&quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;ticks&quot;: &quot;&quot;}, &quot;baxis&quot;: {&quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;ticks&quot;: &quot;&quot;}, &quot;caxis&quot;: {&quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;ticks&quot;: &quot;&quot;}}, &quot;coloraxis&quot;: {&quot;colorbar&quot;: {&quot;outlinewidth&quot;: 0, &quot;ticks&quot;: &quot;&quot;}}, &quot;colorscale&quot;: {&quot;sequential&quot;: [[0.0, &quot;#0d0887&quot;], [0.1111111111111111, &quot;#46039f&quot;], [0.2222222222222222, &quot;#7201a8&quot;], [0.3333333333333333, &quot;#9c179e&quot;], [0.4444444444444444, &quot;#bd3786&quot;], [0.5555555555555556, &quot;#d8576b&quot;], [0.6666666666666666, &quot;#ed7953&quot;], [0.7777777777777778, &quot;#fb9f3a&quot;], [0.8888888888888888, &quot;#fdca26&quot;], [1.0, &quot;#f0f921&quot;]], &quot;sequentialminus&quot;: [[0.0, &quot;#0d0887&quot;], [0.1111111111111111, &quot;#46039f&quot;], [0.2222222222222222, &quot;#7201a8&quot;], [0.3333333333333333, &quot;#9c179e&quot;], [0.4444444444444444, &quot;#bd3786&quot;], [0.5555555555555556, &quot;#d8576b&quot;], [0.6666666666666666, &quot;#ed7953&quot;], [0.7777777777777778, &quot;#fb9f3a&quot;], [0.8888888888888888, &quot;#fdca26&quot;], [1.0, &quot;#f0f921&quot;]], &quot;diverging&quot;: [[0, &quot;#8e0152&quot;], [0.1, &quot;#c51b7d&quot;], [0.2, &quot;#de77ae&quot;], [0.3, &quot;#f1b6da&quot;], [0.4, &quot;#fde0ef&quot;], [0.5, &quot;#f7f7f7&quot;], [0.6, &quot;#e6f5d0&quot;], [0.7, &quot;#b8e186&quot;], [0.8, &quot;#7fbc41&quot;], [0.9, &quot;#4d9221&quot;], [1, &quot;#276419&quot;]]}, &quot;xaxis&quot;: {&quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;ticks&quot;: &quot;&quot;, &quot;title&quot;: {&quot;standoff&quot;: 15}, &quot;zerolinecolor&quot;: &quot;white&quot;, &quot;automargin&quot;: true, &quot;zerolinewidth&quot;: 2}, &quot;yaxis&quot;: {&quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;ticks&quot;: &quot;&quot;, &quot;title&quot;: {&quot;standoff&quot;: 15}, &quot;zerolinecolor&quot;: &quot;white&quot;, &quot;automargin&quot;: true, &quot;zerolinewidth&quot;: 2}, &quot;scene&quot;: {&quot;xaxis&quot;: {&quot;backgroundcolor&quot;: &quot;#E5ECF6&quot;, &quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;showbackground&quot;: true, &quot;ticks&quot;: &quot;&quot;, &quot;zerolinecolor&quot;: &quot;white&quot;, &quot;gridwidth&quot;: 2}, &quot;yaxis&quot;: {&quot;backgroundcolor&quot;: &quot;#E5ECF6&quot;, &quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;showbackground&quot;: true, &quot;ticks&quot;: &quot;&quot;, &quot;zerolinecolor&quot;: &quot;white&quot;, &quot;gridwidth&quot;: 2}, &quot;zaxis&quot;: {&quot;backgroundcolor&quot;: &quot;#E5ECF6&quot;, &quot;gridcolor&quot;: &quot;white&quot;, &quot;linecolor&quot;: &quot;white&quot;, &quot;showbackground&quot;: true, &quot;ticks&quot;: &quot;&quot;, &quot;zerolinecolor&quot;: &quot;white&quot;, &quot;gridwidth&quot;: 2}}, &quot;shapedefaults&quot;: {&quot;line&quot;: {&quot;color&quot;: &quot;#2a3f5f&quot;}}, &quot;annotationdefaults&quot;: {&quot;arrowcolor&quot;: &quot;#2a3f5f&quot;, &quot;arrowhead&quot;: 0, &quot;arrowwidth&quot;: 1}, &quot;geo&quot;: {&quot;bgcolor&quot;: &quot;white&quot;, &quot;landcolor&quot;: &quot;#E5ECF6&quot;, &quot;subunitcolor&quot;: &quot;white&quot;, &quot;showland&quot;: true, &quot;showlakes&quot;: true, &quot;lakecolor&quot;: &quot;white&quot;}, &quot;title&quot;: {&quot;x&quot;: 0.05}, &quot;mapbox&quot;: {&quot;style&quot;: &quot;light&quot;}}}, &quot;xaxis&quot;: {&quot;anchor&quot;: &quot;y&quot;, &quot;domain&quot;: [0.0, 1.0], &quot;title&quot;: {&quot;text&quot;: &quot;x&quot;}}, &quot;yaxis&quot;: {&quot;anchor&quot;: &quot;x&quot;, &quot;domain&quot;: [0.0, 1.0], &quot;title&quot;: {&quot;text&quot;: &quot;y&quot;}}, &quot;legend&quot;: {&quot;tracegroupgap&quot;: 0}, &quot;title&quot;: {&quot;text&quot;: &quot;Random Scatter Plot&quot;}, &quot;autosize&quot;: true}};const explicitHeight=false;const defaultHeight=420;const gd=document.getElementById(&#x27;plot-root&#x27;);const TRACE_KEYS=[&#x27;x&#x27;,&#x27;y&#x27;,&#x27;text&#x27;,&#x27;customdata&#x27;];function normalizePerTraceValue(value, traceCount){if(value===undefined||value===null) return value;if(!Array.isArray(value)) return [value];if(traceCount===1){if(value.length===0) return [[]];if(Array.isArray(value[0])) return value;return [value];}if(value.length===traceCount &amp;&amp; value.every((item)=&gt;Array.isArray(item)||item===null)) return value;if(!Array.isArray(value[0])) return [value];return value;}function stripFragileAnnotationKeys(obj){if(!obj||typeof obj!==&#x27;object&#x27;) return;for(const key of Object.keys(obj)){if(key.startsWith(&#x27;annotations[&#x27;)&amp;&amp;key.endsWith(&#x27;].text&#x27;)) delete obj[key];}}function normalizeUpdateMenus(){const layout=fig.layout||{};const menus=layout.updatemenus||[];const traceCount=(fig.data||[]).length||1;for(const menu of menus){const buttons=(menu&amp;&amp;menu.buttons)||[];for(const btn of buttons){if(!btn||!Array.isArray(btn.args)||btn.args.length===0) continue;if(String(btn.method||&#x27;&#x27;).toLowerCase()!==&#x27;update&#x27;) continue;const dataArgs=btn.args[0];if(dataArgs&amp;&amp;typeof dataArgs===&#x27;object&#x27;){for(const key of TRACE_KEYS){if(key in dataArgs){dataArgs[key]=normalizePerTraceValue(dataArgs[key], traceCount);}}stripFragileAnnotationKeys(dataArgs);}const layoutArgs=btn.args.length&gt;1?btn.args[1]:null;if(layoutArgs&amp;&amp;typeof layoutArgs===&#x27;object&#x27;){stripFragileAnnotationKeys(layoutArgs);}}}}function setupLinkedInteraction(){const meta=((fig.layout||{}).meta||{}).pylogue_linked_interaction;if(!meta||typeof meta!==&#x27;object&#x27;) return;const sourceTrace=Number.isInteger(meta.source_trace)?meta.source_trace:0;const targetTrace=Number.isInteger(meta.target_trace)?meta.target_trace:1;const seasonMenuIndex=Number.isInteger(meta.season_menu_index)?meta.season_menu_index:0;const lookup=(meta.lookup&amp;&amp;typeof meta.lookup===&#x27;object&#x27;)?meta.lookup:{};const defaultSeason=meta.default_season==null?&#x27;&#x27;:String(meta.default_season);function normalizeLinkedSeries(value){if(Array.isArray(value) &amp;&amp; value.length===1 &amp;&amp; Array.isArray(value[0])){return value[0];}return value;}function activeSeason(){try{const menus=(gd.layout&amp;&amp;gd.layout.updatemenus)||[];const menu=menus[seasonMenuIndex];if(!menu||!Array.isArray(menu.buttons)) return defaultSeason;const active=Number.isInteger(menu.active)?menu.active:0;const btn=menu.buttons[active];if(!btn||btn.label==null) return defaultSeason;return String(btn.label);}catch(_err){return defaultSeason;}}gd.on(&#x27;plotly_click&#x27;, function(eventData){const point=eventData&amp;&amp;eventData.points&amp;&amp;eventData.points[0];if(!point||point.curveNumber!==sourceTrace) return;const label=String(point.x);const season=activeSeason();const combinedKey=season+&#x27;||&#x27;+label;const payload=lookup[combinedKey]||lookup[label];if(!payload||typeof payload!==&#x27;object&#x27;) return;const update={};for(const key of TRACE_KEYS){if(payload[key]!==undefined){const val=(key===&#x27;customdata&#x27;)?payload[key]:normalizeLinkedSeries(payload[key]);update[key]=[val];}}if(Object.keys(update).length===0) return;try{const fullData=gd._fullData||[];const target=fullData[targetTrace]||{};const yRef=String(target.yaxis||&#x27;y&#x27;);const yLayoutKey=(yRef===&#x27;y&#x27;)?&#x27;yaxis&#x27;:&#x27;yaxis&#x27;+yRef.slice(1);const yVals=payload.y;if(Array.isArray(yVals) &amp;&amp; yVals.length&gt;0 &amp;&amp; typeof yVals[0]===&#x27;string&#x27;){const patch={};patch[yLayoutKey+&#x27;.type&#x27;]=&#x27;category&#x27;;Plotly.relayout(gd, patch);}}catch(_err){}Plotly.restyle(gd, update, [targetTrace]);if(payload.title){try{const anns=(gd.layout&amp;&amp;gd.layout.annotations)||[];const idx=Number.isInteger(meta.target_title_annotation_index)?meta.target_title_annotation_index:(anns.length&gt;1?1:0);if(anns.length &amp;&amp; idx&gt;=0 &amp;&amp; idx&lt;anns.length){const relayoutPatch={};relayoutPatch[&#x27;annotations[&#x27;+idx+&#x27;].text&#x27;]=String(payload.title);Plotly.relayout(gd, relayoutPatch);}else{Plotly.relayout(gd, {title:String(payload.title)});}}catch(_err){}}});}function mobileHeight(){if(explicitHeight) return defaultHeight;const frameH=(window.frameElement&amp;&amp;window.frameElement.clientHeight)||0;const viewH=window.innerHeight||0;const h=Math.max(frameH, viewH);if(h&gt;0) return Math.max(280, Math.round(h-8));const w=Math.max(280, Math.min(window.innerWidth||1024, 1400));return Math.max(280, Math.round(w*0.6));}function render(){normalizeUpdateMenus();fig.layout=fig.layout||{};fig.layout.autosize=true;fig.layout.width=null;fig.layout.height=mobileHeight();if(window.frameElement){window.frameElement.style.height=fig.layout.height+&#x27;px&#x27;;window.frameElement.height=String(fig.layout.height);}Plotly.react(gd, fig.data||[], fig.layout, {responsive:true, displaylogo:false});}render();setupLinkedInteraction();const ro=new ResizeObserver(()=&gt;{render();try{Plotly.Plots.resize(gd);}catch(e){}});ro.observe(document.body);window.addEventListener(&#x27;resize&#x27;, ()=&gt;{render();try{Plotly.Plots.resize(gd);}catch(e){}});&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;\" height=\"420\" style=\"width:100%;max-width:100%;height:420px;border:0;display:block;\" title=\"Plotly Chart\"></iframe>",
+        "col_span": 6,
+        "row_span": 3,
         "variant": "success",
-        "id": "c10"
+        "id": "c3.i11"
       }
     ],
     "approvals": [
@@ -402,7 +390,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c1"
+        "id": "c4.i1"
       },
       {
         "content": "content for dummy approval 2",
@@ -412,7 +400,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c2"
+        "id": "c4.i2"
       },
       {
         "item_description": "dummy approval 3",
@@ -422,7 +410,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c3"
+        "id": "c4.i3"
       },
       {
         "content": "content for dummy approval 4",
@@ -432,7 +420,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c4"
+        "id": "c4.i4"
       }
     ]
   }
