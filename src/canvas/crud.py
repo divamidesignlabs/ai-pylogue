@@ -1,19 +1,37 @@
 from copy import deepcopy
-import csv
-import io
+import re
 from typing import Any, Callable
 
 
 class CanvasItemCRUD:
     SUMMARY_FIELDS = ("id", "type", "item_description", "title", "content")
+    KNOWN_FIELDS_BASE = (
+        "id",
+        "type",
+        "item_description",
+        "title",
+        "content",
+        "col_span",
+        "row_span",
+        "variant",
+        "drilldown_canvas_id",
+        "class",
+        "tw",
+        "className",
+        "canvas_id",
+        "component_type",
+        "html",
+    )
 
     def __init__(
         self,
         initial_items: list[dict[str, Any]] | None = None,
         on_change: Callable[[], None] | None = None,
+        id_prefix: str = "c1",
     ):
         self._items = deepcopy(initial_items or [])
         self._on_change = on_change
+        self._id_prefix = self._normalize_id_prefix(id_prefix)
 
     def list_items(self) -> list[dict[str, Any]]:
         return deepcopy(self._items)
@@ -21,22 +39,29 @@ class CanvasItemCRUD:
     def set_items(self, items: list[dict[str, Any]]) -> None:
         self._items = deepcopy(items or [])
 
-    def list_component_types(self) -> str:
-        types = sorted({str(item.get("type", "")).strip() for item in self._items if item.get("type")})
-        return ", ".join(types)
+    def list_component_types(self) -> list[str]:
+        return sorted({str(item.get("type", "")).strip() for item in self._items if item.get("type")})
 
-    def list_item_summaries(self, limit: int = 12, offset: int = 0) -> str:
+    def list_item_summaries(
+        self,
+        limit: int = 12,
+        offset: int = 0,
+        fields: list[str] | tuple[str, ...] | None = None,
+    ) -> dict[str, Any]:
         total = len(self._items)
         start = max(0, int(offset))
         size = max(1, int(limit))
         end = min(total, start + size)
         page = self._items[start:end]
-        rows = [[item.get(field, "") for field in self.SUMMARY_FIELDS] for item in page]
-        _ = total, start, size, end  # pagination remains enforced by args; output stays pure CSV
-        return self._to_csv(
-            ["item_id", "component_type", "item_description", "title", "content"],
-            rows,
-        )
+        projected_fields = self._normalize_projection_fields(fields, default=self.SUMMARY_FIELDS)
+        items = [self._project(item, projected_fields) for item in page]
+        return {
+            "items": items,
+            "total": total,
+            "offset": start,
+            "limit": size,
+            "has_more": end < total,
+        }
 
     def _get_item_raw(self, item_id: str) -> dict[str, Any] | None:
         for item in self._items:
@@ -44,32 +69,27 @@ class CanvasItemCRUD:
                 return deepcopy(item)
         return None
 
-    def get_item(self, item_id: str, fields_csv: str) -> str | None:
+    def get_item(self, item_id: str, fields: list[str] | tuple[str, ...] | None = None) -> dict[str, Any] | None:
         item = self._get_item_raw(item_id)
         if item is None:
             return None
-        fields = [part.strip() for part in (fields_csv or "").split(",") if part.strip()]
-        if not fields:
-            raise ValueError("fields_csv is required and must be a comma-separated field list.")
-        row = [item.get(field) for field in fields]
-        return self._to_csv(fields, [row])
+        if fields:
+            projected_fields = self._normalize_projection_fields(fields, default=self.SUMMARY_FIELDS)
+            return self._project(item, projected_fields)
+        return item
 
-    def get_item_fields(self, item_id: str | None = None, component_type: str | None = None) -> str:
-        if item_id:
-            item = self._get_item_raw(item_id)
-            if item is None:
-                return ""
-            return ",".join(item.keys())
-        if component_type:
-            fields: set[str] = set()
-            for item in self._items:
-                if str(item.get("type", "")) == component_type:
-                    fields.update(item.keys())
-            return ",".join(sorted(fields))
-        fields: set[str] = set()
+    def list_known_fields(self) -> list[str]:
+        fields = set(self.KNOWN_FIELDS_BASE)
         for item in self._items:
-            fields.update(item.keys())
-        return ",".join(sorted(fields))
+            fields.update(str(key) for key in item.keys())
+        return sorted(fields)
+
+    def validate_projection_fields(self, fields: list[str] | tuple[str, ...] | None) -> dict[str, Any]:
+        requested = [str(field).strip() for field in (fields or []) if str(field).strip()]
+        allowed = self.list_known_fields()
+        allowed_set = set(allowed)
+        unknown = [field for field in requested if field not in allowed_set]
+        return {"requested": requested, "unknown": unknown, "allowed": allowed}
 
     def create_item(self, item: dict[str, Any]) -> dict[str, Any]:
         created = deepcopy(item)
@@ -113,11 +133,20 @@ class CanvasItemCRUD:
 
     def _next_short_id(self) -> str:
         max_n = 0
+        pattern = re.compile(rf"^{re.escape(self._id_prefix)}\.i(\d+)$")
         for item in self._items:
             raw = str(item.get("id", ""))
-            if raw.startswith("c") and raw[1:].isdigit():
-                max_n = max(max_n, int(raw[1:]))
-        return f"c{max_n + 1}"
+            match = pattern.match(raw)
+            if match:
+                max_n = max(max_n, int(match.group(1)))
+        return f"{self._id_prefix}.i{max_n + 1}"
+
+    @staticmethod
+    def _normalize_id_prefix(prefix: str) -> str:
+        raw = str(prefix or "").strip().lower()
+        if re.fullmatch(r"c\d+", raw):
+            return raw
+        return "c1"
 
     @staticmethod
     def _project(
@@ -127,11 +156,17 @@ class CanvasItemCRUD:
             return [deepcopy(item.get(field)) if field in item else None for field in fields]
         return {field: deepcopy(item.get(field)) for field in fields if field in item}
 
-    @staticmethod
-    def _to_csv(headers: list[str], rows: list[list[Any]]) -> str:
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(headers)
-        for row in rows:
-            writer.writerow(row)
-        return buffer.getvalue().strip()
+    def _normalize_projection_fields(
+        self,
+        fields: list[str] | tuple[str, ...] | None,
+        default: list[str] | tuple[str, ...],
+    ) -> tuple[str, ...]:
+        if not fields:
+            return tuple(default)
+        validation = self.validate_projection_fields(fields)
+        if validation["unknown"]:
+            raise ValueError(
+                f"unknown_fields:{','.join(validation['unknown'])};"
+                f"allowed:{','.join(validation['allowed'])}"
+            )
+        return tuple(validation["requested"])

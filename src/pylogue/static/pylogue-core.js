@@ -1,6 +1,7 @@
 document.documentElement.classList.remove("dark");
 const STOP_PREFIX = "__PYLOGUE_STOP__:";
 const IMPORT_PREFIX = "__PYLOGUE_IMPORT__:";
+const CONTEXT_PREFIX = "__PYLOGUE_CONTEXT__:";
 const decodeCopyB64 = (value) => {
     if (!value) return "";
     try {
@@ -133,7 +134,8 @@ document.body.addEventListener("htmx:wsBeforeSend", (event) => {
     if (input && input.value) {
         if (
             input.value.startsWith(STOP_PREFIX) ||
-            input.value.startsWith(IMPORT_PREFIX)
+            input.value.startsWith(IMPORT_PREFIX) ||
+            input.value.startsWith(CONTEXT_PREFIX)
         ) {
             setSendMode("send");
             return;
@@ -175,6 +177,35 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     form.requestSubmit();
 });
+
+let __lastCanvasContextSent = "";
+const getCanvasIdFromLocation = () => {
+    const match = window.location.pathname.match(/^\/canvas\/([^/?#]+)/);
+    if (match && match[1]) return decodeURIComponent(match[1]);
+    if (window.location.pathname === "/" && document.getElementById("canvas-panel")) {
+        return "main";
+    }
+    return "";
+};
+
+const sendCanvasContextIfNeeded = () => {
+    const canvasId = getCanvasIdFromLocation();
+    if (!canvasId || canvasId === __lastCanvasContextSent) return;
+    const input = document.getElementById("msg");
+    const form = document.getElementById("form");
+    if (!input || !form) return;
+    input.value = `${CONTEXT_PREFIX}${JSON.stringify({ canvas_current_id: canvasId })}`;
+    form.requestSubmit();
+    __lastCanvasContextSent = canvasId;
+};
+
+document.addEventListener("DOMContentLoaded", sendCanvasContextIfNeeded);
+window.addEventListener("popstate", sendCanvasContextIfNeeded);
+document.body.addEventListener("htmx:afterSwap", (event) => {
+    const target = event?.detail?.target;
+    if (target && target.id === "canvas-panel") sendCanvasContextIfNeeded();
+});
+window.addEventListener("pylogue:canvas-changed", sendCanvasContextIfNeeded);
 (function initScrollDebug() {
     const debug = [];
     const maxEntries = 300;

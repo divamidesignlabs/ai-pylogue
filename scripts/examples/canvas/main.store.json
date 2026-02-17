@@ -2,7 +2,7 @@
   "canvases": {
     "main": [
       {
-        "id": "c1",
+        "id": "c1.i1",
         "type": "insight",
         "title": "Welcome",
         "item_description": "High-level welcome insight tile for canvas readiness.",
@@ -13,7 +13,7 @@
         "drilldown_canvas_id": "details"
       },
       {
-        "id": "c2",
+        "id": "c1.i2",
         "type": "insight",
         "title": "Welcome",
         "item_description": "Caution-level insight showing moderate user value.",
@@ -24,7 +24,7 @@
         "canvas_id": "main"
       },
       {
-        "id": "c3",
+        "id": "c1.i3",
         "type": "insight",
         "title": "Alert",
         "item_description": "Danger-level insight showing low user value.",
@@ -34,7 +34,7 @@
         "variant": "danger"
       },
       {
-        "id": "c4",
+        "id": "c1.i4",
         "type": "insight",
         "title": "Hello",
         "item_description": "insight card: Hello",
@@ -44,7 +44,7 @@
         "variant": "success"
       },
       {
-        "id": "c5",
+        "id": "c1.i5",
         "type": "insight",
         "title": "Urgent",
         "item_description": "Check your mail and new random mails",
@@ -63,13 +63,24 @@
         "row_span": 1,
         "variant": "danger",
         "canvas_id": "main",
-        "id": "c6",
+        "id": "c1.i6",
         "drilldown_canvas_id": "approvals"
+      },
+      {
+        "row_span": 1,
+        "title": "Hi",
+        "component_type": "insight",
+        "col_span": 4,
+        "content": "hi",
+        "type": "insight",
+        "variant": "success",
+        "item_description": "insight card: Hi",
+        "id": "c1.i7"
       }
     ],
     "details": [
       {
-        "id": "c1",
+        "id": "c2.i1",
         "type": "insight",
         "title": "Revenue Target vs Actual",
         "item_description": "Drilldown canvas for detailed revenue status.",
@@ -87,7 +98,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c2"
+        "id": "c2.i2"
       },
       {
         "title": "Growth Rate",
@@ -98,7 +109,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c3"
+        "id": "c2.i3"
       },
       {
         "item_description": "This is dummy customer acquisition data.",
@@ -109,7 +120,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c4"
+        "id": "c2.i4"
       },
       {
         "title": "Q1 Revenue",
@@ -120,7 +131,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c5"
+        "id": "c2.i5"
       },
       {
         "content": "110%",
@@ -131,7 +142,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c6"
+        "id": "c2.i6"
       },
       {
         "item_description": "This is dummy customer acquisition data for Q1.",
@@ -142,7 +153,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c7"
+        "id": "c2.i7"
       },
       {
         "component_type": "insight",
@@ -153,7 +164,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c8"
+        "id": "c2.i8"
       },
       {
         "variant": "caution",
@@ -164,7 +175,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c9"
+        "id": "c2.i9"
       },
       {
         "title": "Project Gamma Revenue",
@@ -175,7 +186,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c10"
+        "id": "c2.i10"
       },
       {
         "item_description": "New customers acquired through marketing campaign A.",
@@ -186,7 +197,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c11"
+        "id": "c2.i11"
       },
       {
         "item_description": "New customers acquired through marketing campaign B.",
@@ -197,7 +208,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c12"
+        "id": "c2.i12"
       },
       {
         "item_description": "New customers acquired through marketing campaign C.",
@@ -208,7 +219,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c13"
+        "id": "c2.i13"
       },
       {
         "component_type": "insight",
@@ -219,7 +230,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c14"
+        "id": "c2.i14"
       },
       {
         "content": "20%",
@@ -230,7 +241,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c15"
+        "id": "c2.i15"
       },
       {
         "title": "Project Gamma Growth Rate",
@@ -241,7 +252,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c16"
+        "id": "c2.i16"
       },
       {
         "item_description": "Overall company revenue projection.",
@@ -252,40 +263,7 @@
         "type": "insight",
         "col_span": 4,
         "row_span": 1,
-        "id": "c17"
-      },
-      {
-        "component_type": "insight",
-        "title": "Random Email 1",
-        "content": "user1@example.com",
-        "item_description": "This is a random email.",
-        "type": "insight",
-        "col_span": 4,
-        "row_span": 1,
-        "variant": "success",
-        "id": "c18"
-      },
-      {
-        "component_type": "insight",
-        "item_description": "This is a random email.",
-        "title": "Random Email 2",
-        "content": "user2@example.com",
-        "type": "insight",
-        "col_span": 4,
-        "row_span": 1,
-        "variant": "success",
-        "id": "c19"
-      },
-      {
-        "component_type": "insight",
-        "item_description": "This is a random email.",
-        "content": "user3@example.com",
-        "title": "Random Email 3",
-        "type": "insight",
-        "col_span": 4,
-        "row_span": 1,
-        "variant": "success",
-        "id": "c20"
+        "id": "c2.i17"
       }
     ],
     "mails": [
@@ -297,7 +275,7 @@
         "row_span": 2,
         "variant": "danger",
         "item_description": "insight card: Meeting Reminder",
-        "id": "c1"
+        "id": "c3.i1"
       },
       {
         "content": "Subject: Project Update<br>Body: Here's the latest update on the Project X. Please review the attached document.",
@@ -307,7 +285,7 @@
         "row_span": 2,
         "variant": "danger",
         "item_description": "insight card: Project Update",
-        "id": "c2"
+        "id": "c3.i2"
       },
       {
         "type": "insight",
@@ -317,7 +295,7 @@
         "row_span": 2,
         "variant": "danger",
         "item_description": "insight card: Newsletter",
-        "id": "c3"
+        "id": "c3.i3"
       },
       {
         "component_type": "insight",
@@ -328,7 +306,7 @@
         "col_span": 12,
         "row_span": 2,
         "variant": "danger",
-        "id": "c4"
+        "id": "c3.i4"
       },
       {
         "content": "This is the content of the third dummy email.",
@@ -339,7 +317,7 @@
         "col_span": 12,
         "row_span": 2,
         "variant": "danger",
-        "id": "c5"
+        "id": "c3.i5"
       },
       {
         "component_type": "insight",
@@ -350,7 +328,7 @@
         "col_span": 12,
         "row_span": 2,
         "variant": "danger",
-        "id": "c6"
+        "id": "c3.i6"
       },
       {
         "content": "This is the content of the fifth dummy email.",
@@ -360,7 +338,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "danger",
-        "id": "c7"
+        "id": "c3.i7"
       },
       {
         "content": "This is the content of the sixth dummy email.",
@@ -370,7 +348,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "danger",
-        "id": "c8"
+        "id": "c3.i8"
       },
       {
         "content": "This is the content of the seventh dummy email.",
@@ -380,7 +358,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "danger",
-        "id": "c9"
+        "id": "c3.i9"
       },
       {
         "title": "Team Leaves",
@@ -390,7 +368,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "danger",
-        "id": "c10"
+        "id": "c3.i10"
       },
       {
         "type": "html",
@@ -400,7 +378,7 @@
         "col_span": 6,
         "row_span": 3,
         "variant": "success",
-        "id": "c11"
+        "id": "c3.i11"
       }
     ],
     "approvals": [
@@ -412,7 +390,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c1"
+        "id": "c4.i1"
       },
       {
         "content": "content for dummy approval 2",
@@ -422,7 +400,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c2"
+        "id": "c4.i2"
       },
       {
         "item_description": "dummy approval 3",
@@ -432,7 +410,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c3"
+        "id": "c4.i3"
       },
       {
         "content": "content for dummy approval 4",
@@ -442,7 +420,7 @@
         "col_span": 4,
         "row_span": 1,
         "variant": "success",
-        "id": "c4"
+        "id": "c4.i4"
       }
     ]
   }

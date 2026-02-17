@@ -17,6 +17,7 @@ import re
 
 IMPORT_PREFIX = "__PYLOGUE_IMPORT__:"
 STOP_PREFIX = "__PYLOGUE_STOP__:"
+CONTEXT_PREFIX = "__PYLOGUE_CONTEXT__:"
 _CORE_STATIC_DIR = Path(__file__).resolve().parent / "static"
 _LOG = logging.getLogger(__name__)
 
@@ -130,7 +131,7 @@ def _build_responder_context(conn):
         context["auth"] = auth
         context["user"] = _user_context_from_auth(auth)
     if session:
-        canvas_id = session.get("canvas_current_id")
+        canvas_id = session.get("ws_canvas_current_id") or session.get("canvas_current_id")
         if isinstance(canvas_id, str) and canvas_id.strip():
             context["canvas"] = {"current_canvas_id": canvas_id.strip()}
     return context or None
@@ -634,6 +635,33 @@ def register_ws_routes(
             await send(render_cards(normalized))
             await send(render_chat_data(normalized))
             await send(render_chat_export(normalized, responder=session_responder))
+            return
+
+        if isinstance(msg, str) and msg.startswith(CONTEXT_PREFIX):
+            payload = msg[len(CONTEXT_PREFIX) :].strip()
+            canvas_id = ""
+            if payload:
+                try:
+                    parsed = json.loads(payload)
+                except json.JSONDecodeError:
+                    parsed = {}
+                if isinstance(parsed, dict):
+                    raw = parsed.get("canvas_current_id")
+                    if isinstance(raw, str):
+                        canvas_id = raw.strip()
+            if canvas_id:
+                ws_session = _connection_session(ws)
+                if isinstance(ws_session, dict):
+                    ws_session["ws_canvas_current_id"] = canvas_id
+                    ws_session["canvas_current_id"] = canvas_id
+                context = _build_responder_context(ws)
+                if context is not None:
+                    session["context"] = context
+                    if hasattr(session_responder, "set_context"):
+                        try:
+                            session_responder.set_context(context)
+                        except Exception:
+                            pass
             return
 
         if isinstance(msg, str) and msg.startswith(STOP_PREFIX):

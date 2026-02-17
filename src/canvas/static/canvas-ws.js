@@ -37,6 +37,7 @@ const connect = () => {
             if (!nextPanel || !currentPanel) throw new Error("canvas-panel missing");
             currentPanel.outerHTML = nextPanel.outerHTML;
             window.history.pushState({}, "", pageHref);
+            window.dispatchEvent(new CustomEvent("pylogue:canvas-changed"));
             const inserted = document.getElementById("canvas-panel");
             if (inserted && window.htmx) window.htmx.process(inserted);
           })

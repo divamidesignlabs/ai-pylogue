@@ -88,15 +88,70 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
   border: var(--canvas-border-width) solid var(--canvas-color-border);
   border-radius: var(--canvas-radius-md);
   background: var(--canvas-color-bg-panel);
   padding: var(--canvas-space-md);
   box-shadow: var(--canvas-tile-shadow);
 }
+.canvas-tile-remove {
+  position: absolute;
+  top: -0.55rem;
+  right: -0.55rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #ef4444;
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-2px) scale(0.96);
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease, background-color 150ms ease;
+  pointer-events: none;
+}
+.canvas-tile-remove svg,
+.canvas-tile-remove .uk-icon {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  display: none !important;
+}
+.canvas-tile-remove::before {
+  content: "\00d7";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.canvas-tile-remove:hover {
+  color: #ffffff;
+  background: #dc2626;
+}
+.canvas-tile:hover .canvas-tile-remove,
+.canvas-tile:focus-within .canvas-tile-remove {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
 .canvas-insight {
   justify-content: flex-start;
-  border-radius: 1.75rem;
+  border-radius: 0.5rem;
   border-color: #f3ccd1;
   background: #ffffff;
   padding: 2rem;
@@ -106,12 +161,24 @@
 }
 .canvas-tile-chevron {
   position: absolute;
-  top: 0.9rem;
+  top: 50%;
   right: 1rem;
+  transform: translateY(-50%);
   color: #64748b;
   font-size: 1rem;
   font-weight: 700;
   line-height: 1;
+  pointer-events: none;
+}
+.canvas-item-id {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.35rem;
+  font-size: 0.62rem;
+  line-height: 1;
+  color: #94a3b8;
+  letter-spacing: 0.01em;
+  user-select: none;
   pointer-events: none;
 }
 .canvas-insight-title {

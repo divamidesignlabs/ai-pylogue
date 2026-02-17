@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Awaitable, Callable
 
@@ -11,6 +12,7 @@ _CANVAS_SUBSCRIBERS: dict[int, Callable[[str], Awaitable[None]]] = {}
 _CANVAS_LOOP: asyncio.AbstractEventLoop | None = None
 _STORE_PATH = Path(__file__).resolve().parents[2] / ".canvas_items.json"
 _CANVAS_STORES: dict[str, CanvasItemCRUD] = {}
+_CANVAS_ID_PREFIXES: dict[str, str] = {}
 
 
 def _resolve_loop() -> asyncio.AbstractEventLoop | None:
@@ -95,11 +97,31 @@ def _on_canvas_change() -> None:
     publish_canvas_refresh()
 
 
+def _extract_prefix_from_items(items: list[dict]) -> str | None:
+    for item in items or []:
+        raw = str(item.get("id", ""))
+        match = re.match(r"^(c\d+)\.i\d+$", raw)
+        if match:
+            return match.group(1)
+    return None
+
+
+def _next_prefix() -> str:
+    max_n = 0
+    for prefix in _CANVAS_ID_PREFIXES.values():
+        match = re.match(r"^c(\d+)$", str(prefix))
+        if match:
+            max_n = max(max_n, int(match.group(1)))
+    return f"c{max_n + 1}"
+
+
 def _hydrate_collections(collections: dict[str, list[dict]]) -> None:
     for canvas_id, items in collections.items():
+        prefix = _extract_prefix_from_items(items) or _CANVAS_ID_PREFIXES.get(canvas_id) or _next_prefix()
+        _CANVAS_ID_PREFIXES[canvas_id] = prefix
         existing = _CANVAS_STORES.get(canvas_id)
         if existing is None:
-            _CANVAS_STORES[canvas_id] = CanvasItemCRUD(items, on_change=_on_canvas_change)
+            _CANVAS_STORES[canvas_id] = CanvasItemCRUD(items, on_change=_on_canvas_change, id_prefix=prefix)
         else:
             existing.set_items(items)
 
@@ -115,7 +137,9 @@ def get_canvas_store(canvas_id: str) -> CanvasItemCRUD:
     canvas_id = (canvas_id or "main").strip() or "main"
     store = _CANVAS_STORES.get(canvas_id)
     if store is None:
-        store = CanvasItemCRUD([], on_change=_on_canvas_change)
+        prefix = _CANVAS_ID_PREFIXES.get(canvas_id) or _next_prefix()
+        _CANVAS_ID_PREFIXES[canvas_id] = prefix
+        store = CanvasItemCRUD([], on_change=_on_canvas_change, id_prefix=prefix)
         _CANVAS_STORES[canvas_id] = store
     return store
 
