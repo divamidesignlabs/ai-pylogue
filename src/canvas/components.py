@@ -1,4 +1,6 @@
 from fasthtml.common import A, Button, Div, H2, Iframe
+import html as html_lib
+import re
 
 INSIGHT_VARIANTS = {
     "success": "canvas-tile--insight-success",
@@ -53,6 +55,24 @@ def _item_id_badge(item):
     return Div(item_id, cls="canvas-item-id")
 
 
+_IFRAME_SRCDOC_RE = re.compile(r"""<iframe[^>]*\ssrcdoc=(["'])(.*?)\1""", re.IGNORECASE | re.DOTALL)
+
+
+def _normalized_srcdoc(value):
+    if not isinstance(value, str):
+        return ""
+    raw = value.strip()
+    if not raw:
+        return ""
+    match = _IFRAME_SRCDOC_RE.search(raw)
+    normalized = html_lib.unescape(match.group(2)) if match else raw
+    # Some generated Plotly embeds force the parent iframe height (e.g. 420px),
+    # which shrinks full-height canvas cards after initial render.
+    normalized = re.sub(r"window\.frameElement\.style\.height\s*=\s*[^;]+;", "", normalized)
+    normalized = re.sub(r"window\.frameElement\.height\s*=\s*[^;]+;", "", normalized)
+    return normalized
+
+
 def render_insight(item, current_canvas_id: str = "main"):
     variant = INSIGHT_VARIANTS.get(item.get("variant"), "")
     size_cls = "canvas-insight--hero" if _span(item.get("col_span", 12), 1, 12, 12) >= 12 else "canvas-insight--compact"
@@ -103,19 +123,69 @@ def render_unknown(item, current_canvas_id: str = "main"):
 
 
 def render_html(item, current_canvas_id: str = "main"):
-    _ = current_canvas_id
-    return Div(
-        _remove_card_control(),
-        H2(item.get("title", "Chart"), cls="canvas-tile-title"),
-        Iframe(
-            srcdoc=item.get("html", ""),
+    layout_style = _component_layout_style(item)
+    html_content = _normalized_srcdoc(item.get("html", ""))
+    if isinstance(html_content, str) and html_content.strip():
+        body = Iframe(
+            srcdoc=html_content,
             cls="canvas-html-frame",
             loading="lazy",
             referrerpolicy="no-referrer",
             sandbox="allow-scripts allow-same-origin",
-        ),
+        )
+    else:
+        body = Div(item.get("content", ""), cls="canvas-html-fallback")
+    target_canvas = item.get("drilldown_canvas_id")
+    if isinstance(target_canvas, str) and target_canvas.strip():
+        target = target_canvas.strip()
+        page_href = f"/canvas/{target}?from={current_canvas_id}"
+        panel_href = f"/canvas/{target}/panel?from={current_canvas_id}"
+        body_cls = _component_cls(item, "canvas-tile", "canvas-tile--html", "canvas-tile--linkable")
+        return A(
+            Div(
+                _remove_card_control(),
+                Div(">", cls="canvas-tile-chevron"),
+                H2(item.get("title", "Chart"), cls="canvas-tile-title"),
+                body,
+                _item_id_badge(item),
+                cls=body_cls,
+            ),
+            href=page_href,
+            hx_get=panel_href,
+            hx_target="#canvas-panel",
+            hx_swap="outerHTML",
+            hx_push_url=page_href,
+            cls="canvas-tile-link",
+            style=layout_style,
+        )
+    return Div(
+        _remove_card_control(),
+        H2(item.get("title", "Chart"), cls="canvas-tile-title"),
+        body,
         _item_id_badge(item),
         cls=_component_cls(item, "canvas-tile", "canvas-tile--html"),
+        style=layout_style,
+    )
+
+
+def render_plotly(item, current_canvas_id: str = "main"):
+    _ = current_canvas_id
+    html_content = _normalized_srcdoc(item.get("html", ""))
+    if isinstance(html_content, str) and html_content.strip():
+        body = Iframe(
+            srcdoc=html_content,
+            cls="canvas-html-frame",
+            loading="lazy",
+            referrerpolicy="no-referrer",
+            sandbox="allow-scripts allow-same-origin",
+        )
+    else:
+        body = Div(item.get("content", ""), cls="canvas-html-fallback")
+    return Div(
+        _remove_card_control(),
+        body,
+        _item_id_badge(item),
+        cls=_component_cls(item, "canvas-tile", "canvas-tile--html", "canvas-tile--plotly"),
         style=_component_layout_style(item),
     )
 
@@ -123,6 +193,7 @@ def render_html(item, current_canvas_id: str = "main"):
 RENDERERS = {
     "insight": render_insight,
     "html": render_html,
+    "plotly": render_plotly,
 }
 
 
