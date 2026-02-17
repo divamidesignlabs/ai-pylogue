@@ -19,6 +19,11 @@ html {
   --foreground: 222 47% 11%;
 }
 
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
 .chat-panel {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -27,23 +32,64 @@ html {
 }
 
 .chat-row-user {
-  background: #e2e8f0;
-  border-left: 3px solid #cbd5f5;
+  background: #dbeafe;
+  border-left: none;
+  border-radius: 20px;
+  padding: 18px 24px;
+  margin-left: auto;
+  margin-right: 20px;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  max-width: 65%;
+  width: fit-content;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #000000;
+  text-align: left;
+}
+
+.chat-row-user p {
+  margin-bottom: 6px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.chat-row-user .marked {
+  color: #000000;
+  text-align: left;
+  font-size: 1rem;
 }
 
 .chat-row-assistant {
   background: #f8fafc;
-  border-left: 3px solid #e2e8f0;
+  margin: 40px 20px;
+  clear: both;
 }
 
 .chat-row-block {
-  margin: 0;
   padding: 14px 12px;
+  clear: both;
+}
+
+/* Only apply flex reordering when .tool-html is present */
+.chat-row-assistant .marked:has(.tool-html) {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-row-assistant .marked:has(.tool-html) .tool-html {
+  order: 2;
+}
+
+.chat-row-assistant .marked:has(.tool-html) p {
+  order: 1;
 }
 
 .tool-status {
-  display: inline-block;
-  padding: 0.18rem 0.45rem;
+  display: block;
+  width: fit-content;
+  padding: 0.3rem 0.6rem;
+  margin: 5px 0;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 600;
@@ -54,24 +100,13 @@ html {
 
 .tool-status--running {
   position: relative;
-  overflow: hidden;
+  /* overflow: hidden; */
   color: #0f172a;
 }
 
 .tool-status--running::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -150%;
-  width: 150%;
-  height: 100%;
-  background: linear-gradient(
-    120deg,
-    transparent 0%,
-    rgba(34, 197, 94, 0.15),
-    transparent 80%
-  );
-  animation: tool-shimmer 1.4s linear infinite;
+  content: " ...";
+  animation: loading-dots 1.4s steps(4, end) infinite;
 }
 
 .tool-status--done {
@@ -83,6 +118,12 @@ html {
   color: #16a34a;
   font-weight: 700;
   margin-left: 0.25rem;
+}
+
+@keyframes loading-dots {
+  0%, 20% { content: " ."; }
+  40% { content: " .."; }
+  60%, 100% { content: " ..."; }
 }
 
 @keyframes tool-shimmer {
@@ -152,7 +193,7 @@ html {
 }
 
 .marked {
-  font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 .marked :not(pre) > code {

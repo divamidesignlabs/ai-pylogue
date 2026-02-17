@@ -267,6 +267,21 @@ const renderMarkdown = (root = document) => {
         }
         if (looksLikeHtmlBlock(normalizedSource)) {
             el.innerHTML = normalizedSource;
+            // Scroll after HTML content (like charts) is rendered
+            requestAnimationFrame(() => {
+                if (window.__applyToolStatusUpdates) {
+                    window.__applyToolStatusUpdates(document);
+                }
+                if (window.__forceScrollToBottom) {
+                    window.__forceScrollToBottom();
+                }
+            });
+            // Also apply status updates with a slight delay to catch late arrivals
+            setTimeout(() => {
+                if (window.__applyToolStatusUpdates) {
+                    window.__applyToolStatusUpdates(document);
+                }
+            }, 100);
         } else {
             const safeSource = protectEscapedDollars(normalizedSource);
             el.innerHTML = marked.parse(safeSource);
@@ -282,6 +297,12 @@ const renderMarkdown = (root = document) => {
     }
     if (window.__applyToolStatusUpdates) {
         window.__applyToolStatusUpdates(root);
+        // Call again with delay to catch late-arriving status updates
+        setTimeout(() => {
+            if (window.__applyToolStatusUpdates) {
+                window.__applyToolStatusUpdates(document);
+            }
+        }, 50);
     }
 };
 
@@ -335,7 +356,7 @@ const applyToolStatusUpdates = (root = document) => {
         }
         const replacement = document.createElement("div");
         replacement.className = "tool-status tool-status--done";
-        replacement.textContent = update.innerHTML || "Completed";
+        replacement.innerHTML = update.innerHTML || "Completed";
         target.replaceWith(replacement);
         update.remove();
     });

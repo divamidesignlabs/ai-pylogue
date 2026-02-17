@@ -347,7 +347,7 @@ class AgnoResponder:
                     if self.show_tool_details and (tool_name or args or result):
                         yield _format_tool_result_summary(tool_name, args, result)
                     if not self.show_tool_details:
-                        yield _format_tool_status_done(args, resolved_call_id)
+                        yield _format_tool_status_done(args, resolved_call_id, tool_name)
                     resolved_html = _resolve_tool_html(result)
                     if resolved_html:
                         yield _wrap_tool_html(resolved_html)
