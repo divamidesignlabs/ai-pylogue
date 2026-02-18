@@ -270,7 +270,7 @@ def app_factory(
     def _hero():
         return Div(
             Div(
-                H2(hero_title, cls="hero-title"),
+                H3(hero_title, cls="hero-title"),
                 P(hero_subtitle, cls="hero-sub"),
                 cls="space-y-2",
             ),
