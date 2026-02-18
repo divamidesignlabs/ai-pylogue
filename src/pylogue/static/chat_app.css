@@ -11,8 +11,9 @@
   --line-strong: #d0d5dd;
 }
 
-*{
-  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+
+* {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 html, body {
@@ -20,7 +21,7 @@ html, body {
 }
 
 body {
-  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+  font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
   background: var(--paper);
   color: var(--ink);
 }
