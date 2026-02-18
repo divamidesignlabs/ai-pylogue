@@ -181,16 +181,32 @@ const beginTitleEdit = (chatId, titleEl) => {
     if (!titleEl) return;
     const current = getChatById(chatId);
     if (!current) return;
+    
+    // Find the parent button and disable it during edit
+    const parentButton = titleEl.closest('button');
+    const wasDisabled = parentButton ? parentButton.disabled : false;
+    if (parentButton) {
+        parentButton.disabled = true;
+        parentButton.style.pointerEvents = 'none';
+    }
+    
     const input = document.createElement("input");
     input.className = "chat-title-input";
     input.type = "text";
     input.value = current.title || "New chat";
     input.setAttribute("aria-label", "Edit chat title");
+    input.style.pointerEvents = 'auto'; // Ensure input is still interactive
     titleEl.replaceWith(input);
     input.focus();
     input.setSelectionRange(0, input.value.length);
 
     const finish = async (commit) => {
+        // Re-enable the button
+        if (parentButton) {
+            parentButton.disabled = wasDisabled;
+            parentButton.style.pointerEvents = '';
+        }
+        
         const nextTitle = commit
             ? input.value.trim()
             : current.title || "New chat";
@@ -211,14 +227,21 @@ const beginTitleEdit = (chatId, titleEl) => {
         renderChatList(chatIndex);
     };
 
+    // Stop all events from bubbling to parent button
+    input.addEventListener("click", (event) => {
+        event.stopPropagation();
+    });
     input.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
             event.preventDefault();
+            event.stopPropagation();
             finish(true);
         } else if (event.key === "Escape") {
             event.preventDefault();
+            event.stopPropagation();
             finish(false);
         }
+        // Don't stop propagation for other keys - let them work normally
     });
     input.addEventListener("blur", () => finish(true));
 };
