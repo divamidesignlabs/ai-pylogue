@@ -1,13 +1,21 @@
-/* Fonts for the entire application */
-*{
-  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+
+/* Satoshi Variable Font */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/static/font/Satoshi-Variable.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+* {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 html, body {
   margin: 0;
   background: #f8fafc;
   color: #0f172a;
-  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+  font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 html {
