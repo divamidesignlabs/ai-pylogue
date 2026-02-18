@@ -33,7 +33,7 @@ html {
 
 .chat-row-user {
   background: #f8fafc;
-  margin: 40px 20px;
+  margin: 0 20px;
   clear: both;
   color: #000000;
 }
@@ -53,7 +53,7 @@ html {
 
 .chat-row-assistant {
   background: #f8fafc;
-  margin: 40px 20px;
+  margin: 0 20px;
   clear: both;
 }
 
