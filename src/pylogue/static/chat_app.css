@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --paper: #f9fafb;
   --paper-2: #f2f4f7;
   --ink: #101828;
@@ -14,6 +15,10 @@
   font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
+html, body {
+  color-scheme: light;
+}
+
 body {
   font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
   background: var(--paper);
@@ -24,6 +29,7 @@ body {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   height: 100vh;
+  background: #f9fafb;
 }
 
 .sidebar-backdrop,
@@ -32,6 +38,7 @@ body {
 }
 
 .sidebar {
+  background: #ffffff;
   background: var(--panel);
   border-right: 1px solid var(--line);
   padding: 20px 18px;
@@ -176,6 +183,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: #ffffff;
 }
 
 .hero {
@@ -184,6 +192,7 @@ body {
   align-items: flex-start;
   gap: 16px;
   padding: 28px clamp(18px, 4vw, 48px) 18px;
+  background: #ffffff;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
@@ -204,15 +213,18 @@ body {
 .chat-content-wrapper {
   flex: 1;
   overflow-y: auto;
+  background: #ffffff;
 }
 
 .chat-panel {
+  background: #ffffff;
   background: var(--panel);
   padding: 20px 20px 24px;
 }
 
 .chat-input-area {
   padding: 18px clamp(18px, 4vw, 48px) 28px;
+  background: #ffffff;
   background: var(--panel);
   border-top: 1px solid var(--line);
   flex-shrink: 0;
