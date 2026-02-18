@@ -299,18 +299,20 @@ def render_cards(cards):
         assistant_id = f"assistant-{card_id}" if card_id else ""
         rows.append(
             Div(
-                P("You", cls=(TextPresets.muted_sm, "text-right")),
                 Div(
-                    card["question"],
-                    data_raw_b64=base64.b64encode(card["question"].encode("utf-8")).decode("ascii"),
-                    cls="marked text-base text-right",
+                    NotStr('<svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg" class="user-icon"><circle cx="6.54545" cy="6.54545" r="6.54545" fill="#8FC187"/><circle cx="6.54545" cy="19.6364" r="6.54545" fill="#8FC187"/><circle cx="19.6364" cy="6.54545" r="6.54545" fill="#8FC187"/><circle cx="19.6364" cy="19.6364" r="6.54545" fill="#8FC187"/></svg>'),
+                    Div(
+                        card["question"],
+                        data_raw_b64=base64.b64encode(card["question"].encode("utf-8")).decode("ascii"),
+                        cls="marked text-base",
+                    ),
+                    cls="user-message-content",
                 ),
                 cls="chat-row-block chat-row-user",
             )
         )
         rows.append(
             Div(
-                P("Assistant", cls=(TextPresets.muted_sm, "text-left")),
                 Div(
                     Button(
                         UkIcon("copy"),
@@ -344,7 +346,6 @@ def render_cards(cards):
         return Div(
             Div(
                 *panel_content,
-                cls="divide-y divide-slate-200",
             ),
             id="cards",
             cls="chat-panel",

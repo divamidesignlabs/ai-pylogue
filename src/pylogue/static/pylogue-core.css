@@ -15,34 +15,55 @@ html {
 }
 
 :root, .uk-theme-slate {
-  --background: 0 0% 98%;
+  --background: #ffffff;
   --foreground: 222 47% 11%;
 }
 
 .text-base {
-  font-size: 1rem;
+  font-size: 0.9rem !important;
   line-height: 1.5rem;
 }
 
 .chat-panel {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 20px;
 }
 
 .chat-row-user {
-  background: #f8fafc;
   margin: 0 20px;
   clear: both;
   color: #000000;
+}
+
+.user-message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.user-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  color: #3b82f6;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.user-message-content .marked {
+  flex: 1;
 }
 
 .chat-row-user p {
   margin-bottom: 6px;
   text-align: left;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .chat-row-user .marked {
@@ -79,6 +100,7 @@ html {
 .chat-row-user .marked:has(.tool-html) {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .chat-row-user .marked:has(.tool-html) .tool-html {
@@ -179,7 +201,6 @@ html {
 .marked blockquote {
   margin: 16px 0;
   padding: 12px 14px;
-  border-left: 3px solid #e2e8f0;
   background: #f8fafc;
   color: #475569;
   border-radius: 8px;
@@ -380,6 +401,7 @@ html {
 }
 
 .copy-btn {
+  display: none;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   width: 24px;
