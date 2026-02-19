@@ -18,9 +18,9 @@ html, body {
   font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
-html {
+/* html {
   color-scheme: light;
-}
+} */
 
 :root, .uk-theme-slate {
   --background: #ffffff;
