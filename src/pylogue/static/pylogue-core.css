@@ -11,35 +11,44 @@
   font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
+*:hover {
+  scrollbar-color: #ffffff transparent !important;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: #ffffff !important;
+}
+
 html, body {
   margin: 0;
-  background: #f8fafc;
-  color: #0f172a;
+  background: linear-gradient(180deg, #303b57 0%, #0c121e 100%);
+  color: #9ca3af;
   font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
-/* html {
-  color-scheme: light;
-} */
+html {
+  color-scheme: dark;
+}
 
 :root, .uk-theme-slate {
-  --background: #ffffff;
-  --foreground: 222 47% 11%;
+  --background: #0c121e;
+  --foreground: 241 241 241;
 }
 
 .text-base {
   font-size: 0.9rem !important;
   line-height: 1.5rem;
+  color: #f1f1f1;
 }
 
 .chat-panel {
-  background: #ffffff;
+  background: transparent;
 }
 
 .chat-row-user {
-  margin: 0 20px;
+  margin: 0 1px;
   clear: both;
-  color: #000000;
+  color: #9ca3af;
 }
 
 .user-message-content {
@@ -72,22 +81,23 @@ html, body {
   text-align: left;
   font-weight: 600;
   font-size: 1rem;
+  color: #f1f1f1;
 }
 
 .chat-row-user .marked {
-  color: #000000;
+  color: #9ca3af;
   text-align: left;
   font-size: 1rem;
 }
 
 .chat-row-assistant {
-  background: #f8fafc;
+  background: transparent;
   margin: 0 20px;
   clear: both;
 }
 
 .chat-row-block {
-  padding: 14px 12px;
+  padding: 3px 7px;
   clear: both;
 }
 
@@ -128,14 +138,12 @@ html, body {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.005em;
-  background: rgba(148, 163, 184, 0.15);
-  color: #0f172a;
 }
 
 .tool-status--running {
   position: relative;
   /* overflow: hidden; */
-  color: #0f172a;
+   color:#9CA3AF;
 }
 
 .tool-status--running::after {
@@ -144,8 +152,7 @@ html, body {
 }
 
 .tool-status--done {
-  background: rgba(34, 197, 94, 0.1);
-  color: #0f172a;
+  color:#9CA3AF;
 }
 
 .tool-status--done .tool-status-check {
@@ -181,29 +188,36 @@ html, body {
   border-collapse: collapse;
   margin: 16px 0;
   font-size: 0.95rem;
+  color: #f1f1f1;
+  background: rgba(12, 18, 30, 0.45);
+  border: 1px solid #3a475d;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .marked thead th {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgba(48, 59, 87, 0.8);
+  color: #f1f1f1;
   font-weight: 600;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #3a475d;
   padding: 10px 12px;
   text-align: left;
 }
 
 .marked tbody td {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #3a475d;
+  background: rgba(12, 18, 30, 0.35);
+  color: #f1f1f1;
   padding: 10px 12px;
   vertical-align: top;
 }
 
 .marked tbody tr:nth-child(odd) {
-  background: #f8fafc;
+  background: transparent;
 }
 
 .marked tbody tr:hover {
-  background: #eef2ff;
+  background: rgba(48, 59, 87, 0.5);
 }
 
 .marked blockquote {
@@ -439,6 +453,7 @@ html, body {
 .copy-chat-btn svg {
   width: 14px;
   height: 14px;
+  color: #f1f1f1;
 }
 
 .copy-btn svg {

@@ -30,7 +30,7 @@ body {
 
 .sidebar {
   background: linear-gradient(180deg, var(--paper-2), #f9f5ef 75%);
-  border-right: 1px solid var(--line);
+  /* border-right: 1px solid var(--line); */
   padding: 20px 18px;
   display: flex;
   flex-direction: column;
@@ -45,6 +45,11 @@ body {
   justify-content: space-between;
 }
 
+.sidebar-header h1,
+.hero-title {
+  color: #ffffff !important;
+}
+
 .chat-list {
   display: flex;
   flex-direction: column;
@@ -52,6 +57,32 @@ body {
   overflow-y: auto;
   padding-right: 6px;
   flex: 1;
+}
+* {
+  scrollbar-color: #ffffff transparent;
+  scrollbar-width: thin;
+}
+
+*:hover {
+  scrollbar-color: #ffffff transparent !important;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: #ffffff !important;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ffffff;
+  border-radius: 999px;
 }
 
 .chat-item {
@@ -140,14 +171,22 @@ body {
   color: var(--accent-2);
 }
 
-.chat-item:hover .chat-item-delete {
+.chat-item-delete {
+  color: #b42318;
+}
+
+.chat-item:hover .chat-item-delete,
+.chat-item-actions:hover .chat-item-delete,
+.chat-item-actions:focus-within .chat-item-delete {
   opacity: 1;
   pointer-events: auto;
   border-color: rgba(185, 28, 28, 0.25);
   box-shadow: 0 6px 12px rgba(185, 28, 28, 0.12);
 }
 
-.chat-item:hover .chat-item-edit {
+.chat-item:hover .chat-item-edit,
+.chat-item-actions:hover .chat-item-edit,
+.chat-item-actions:focus-within .chat-item-edit {
   opacity: 1;
   pointer-events: auto;
   border-color: rgba(47, 111, 109, 0.25);
@@ -192,8 +231,8 @@ body {
 
 .hero-sub {
   color: var(--ink-muted);
-  font-size: 0.95rem;
-  max-width: 54ch;
+  font-size: 0.87rem;
+  max-width: 75ch;
 }
 
 .chat-panel {
@@ -256,7 +295,7 @@ button {
     width: min(84vw, 320px);
     height: 100dvh;
     z-index: 40;
-    border-right: 1px solid var(--line);
+    /* border-right: 1px solid var(--line); */
     border-bottom: none;
     transform: translateX(-105%);
     transition: transform 200ms ease;
