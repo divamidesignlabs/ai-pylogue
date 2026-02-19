@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light;
+  /* color-scheme: light; */
   --paper: #f9fafb;
   --paper-2: #f2f4f7;
   --ink: #101828;
@@ -16,9 +16,9 @@
   font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
-html, body {
+/* html, body {
   color-scheme: light;
-}
+} */
 
 body {
   font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
