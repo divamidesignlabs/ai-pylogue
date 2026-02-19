@@ -4,10 +4,49 @@ import json
 from loguru import logger
 from pylogue.embeds import store_html
 
+THEME_TEXT = "#F1F1F1"
+THEME_BG_GRADIENT = "linear-gradient(180deg, #303B57 0%, #0C121E 100%)"
+
+
 try:
     import pandas as pd
 except ImportError:
     pd = None
+
+# Pylogue custom color palette
+PYLOGUE_COLORS = ["#8ACFF9", "#AD8AF9", "#768EF8", "#FF7F68", "#8FC187"]
+
+
+def get_pylogue_color_palette(n_colors: int) -> list[str]:
+    """Get Pylogue branded color palette.
+    
+    For n <= 5: returns the exact colors
+    For n > 5: generates darker shades by cycling through base colors
+    
+    Args:
+        n_colors: Number of colors needed
+        
+    Returns:
+        List of hex color codes
+    """
+    if n_colors <= len(PYLOGUE_COLORS):
+        return PYLOGUE_COLORS[:n_colors]
+
+    colors = PYLOGUE_COLORS.copy()
+    remaining = n_colors - len(PYLOGUE_COLORS)
+
+    # Generate progressively darker shades in rounds to keep colors similar.
+    for i in range(remaining):
+        base_idx = i % len(PYLOGUE_COLORS)
+        round_idx = (i // len(PYLOGUE_COLORS)) + 1
+        base_color = PYLOGUE_COLORS[base_idx]
+        rgb = tuple(int(base_color[j:j + 2], 16) for j in (1, 3, 5))
+        factor = max(0.35, 1.0 - (0.18 * round_idx))
+        shaded = tuple(max(0, min(255, int(c * factor))) for c in rgb)
+        shade_hex = f"#{shaded[0]:02x}{shaded[1]:02x}{shaded[2]:02x}"
+        colors.append(shade_hex)
+
+    return colors
 
 try:
     import plotly.express as px
@@ -26,6 +65,254 @@ def _preview(code: str, limit: int = 240) -> str:
         return ""
     compact = " ".join(code.strip().split())
     return compact[:limit] + ("..." if len(compact) > limit else "")
+
+
+def _set_font_color(font_obj):
+    if not isinstance(font_obj, dict):
+        return
+    font_obj["color"] = THEME_TEXT
+
+
+def _set_title_color(title_obj):
+    if isinstance(title_obj, str):
+        return {"text": title_obj, "font": {"color": THEME_TEXT}}
+    if isinstance(title_obj, dict):
+        title_obj.setdefault("font", {})
+        _set_font_color(title_obj["font"])
+        return title_obj
+    return title_obj
+
+
+def _to_float(value):
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _improve_pie_representation(trace: dict):
+    labels = trace.get("labels")
+    values = trace.get("values")
+    if not isinstance(labels, list) or not isinstance(values, list):
+        return
+    if len(labels) != len(values) or len(labels) == 0:
+        return
+
+    cleaned = []
+    for lbl, val in zip(labels, values):
+        num = _to_float(val)
+        if num is None:
+            continue
+        cleaned.append((str(lbl), num))
+    if not cleaned:
+        return
+
+    total = sum(v for _, v in cleaned)
+    if total <= 0:
+        return
+
+    # Keep stronger categories and group tiny slices into "Other".
+    cleaned.sort(key=lambda x: x[1], reverse=True)
+    major = []
+    other_sum = 0.0
+    for i, (lbl, val) in enumerate(cleaned):
+        pct = val / total
+        if i < 6 and pct >= 0.03:
+            major.append((lbl, val))
+        else:
+            other_sum += val
+    if other_sum > 0:
+        major.append(("Other", other_sum))
+
+    trace["labels"] = [l for l, _ in major]
+    trace["values"] = [v for _, v in major]
+    trace["sort"] = True
+    trace["direction"] = "clockwise"
+    trace["textinfo"] = "percent"
+    trace["textposition"] = "inside"
+    trace["hovertemplate"] = "%{label}<br>%{value:,.0f} (%{percent})<extra></extra>"
+
+
+def _set_default_hovertemplate(trace: dict, trace_type: str):
+    if trace.get("hovertemplate"):
+        return
+    if trace_type in {"heatmap", "contour", "histogram2d", "histogram2dcontour", "surface"}:
+        trace["hovertemplate"] = "x: %{x}<br>y: %{y}<br>value: %{z:,.2f}<extra></extra>"
+        return
+    if trace_type in {"bar", "histogram", "waterfall", "funnel", "scatter", "scatter3d", "scattergeo", "scatterpolar", "scatterternary", "box", "violin"}:
+        trace["hovertemplate"] = "x: %{x}<br>y: %{y:,.2f}<extra></extra>"
+        return
+
+
+def _apply_plotly_theme(fig_json: dict):
+    layout = fig_json.setdefault("layout", {})
+    traces = fig_json.get("data", [])
+    palette = get_pylogue_color_palette(max(5, len(traces)))
+
+    layout["paper_bgcolor"] = "rgba(0,0,0,0)"
+    layout["plot_bgcolor"] = "rgba(0,0,0,0)"
+    # Force palette as default across Plotly traces unless explicitly overridden.
+    layout["colorway"] = palette
+    layout.setdefault("hoverlabel", {})
+    layout["hoverlabel"]["bgcolor"] = "rgba(12,18,30,0.92)"
+    layout["hoverlabel"]["bordercolor"] = "#3A475D"
+    layout["hoverlabel"]["font"] = {"color": THEME_TEXT}
+    layout.setdefault("margin", {})
+    layout["margin"].setdefault("t", 84)
+    layout["margin"].setdefault("r", 28)
+    layout["margin"].setdefault("b", 64)
+    layout["margin"].setdefault("l", 64)
+    layout.setdefault("uniformtext", {})
+    layout["uniformtext"].setdefault("mode", "hide")
+    layout["uniformtext"].setdefault("minsize", 10)
+    layout.setdefault("legend", {})
+    layout["legend"].setdefault("bgcolor", "rgba(12,18,30,0.35)")
+    layout["legend"].setdefault("bordercolor", "#3A475D")
+    layout["legend"].setdefault("borderwidth", 1)
+
+    layout.setdefault("font", {})
+    _set_font_color(layout["font"])
+
+    if "title" in layout:
+        layout["title"] = _set_title_color(layout["title"])
+    if isinstance(layout.get("legend"), dict):
+        legend = layout["legend"]
+        legend.setdefault("font", {})
+        _set_font_color(legend["font"])
+        if isinstance(legend.get("title"), dict):
+            legend["title"].setdefault("font", {})
+            _set_font_color(legend["title"]["font"])
+
+    for key, axis in list(layout.items()):
+        if not (key.startswith("xaxis") or key.startswith("yaxis")):
+            continue
+        if not isinstance(axis, dict):
+            continue
+        axis["color"] = THEME_TEXT
+        axis.setdefault("tickfont", {})
+        _set_font_color(axis["tickfont"])
+        axis["automargin"] = True
+        axis.setdefault("gridcolor", "rgba(58,71,93,0.45)")
+        axis.setdefault("linecolor", "rgba(241,241,241,0.35)")
+        axis.setdefault("zerolinecolor", "rgba(58,71,93,0.55)")
+        if "title" in axis:
+            axis["title"] = _set_title_color(axis["title"])
+
+    if isinstance(layout.get("annotations"), list):
+        for ann in layout["annotations"]:
+            if not isinstance(ann, dict):
+                continue
+            ann.setdefault("font", {})
+            _set_font_color(ann["font"])
+
+    # Default continuous scale for heatmaps/contours.
+    default_colorscale = []
+    if len(palette) > 1:
+        step = 1 / (len(palette) - 1)
+        default_colorscale = [[idx * step, color] for idx, color in enumerate(palette)]
+    elif palette:
+        default_colorscale = [[0, palette[0]], [1, palette[0]]]
+
+    # Plotly Express often uses shared coloraxis for color mapping.
+    for key, value in list(layout.items()):
+        if not key.startswith("coloraxis") or not isinstance(value, dict):
+            continue
+        if default_colorscale:
+            value["colorscale"] = default_colorscale
+        colorbar = value.get("colorbar")
+        if isinstance(colorbar, dict):
+            colorbar.setdefault("tickfont", {})
+            _set_font_color(colorbar["tickfont"])
+            if "title" in colorbar:
+                colorbar["title"] = _set_title_color(colorbar["title"])
+
+    for idx, trace in enumerate(traces):
+        if not isinstance(trace, dict):
+            continue
+        trace_type = str(trace.get("type", "")).lower()
+        trace_color = palette[idx % len(palette)]
+        _set_default_hovertemplate(trace, trace_type)
+
+        marker = trace.get("marker")
+        if not isinstance(marker, dict):
+            marker = {}
+            trace["marker"] = marker
+
+        # Force discrete palette color on common trace styles.
+        if trace_type in {
+            "bar", "scatter", "box", "violin", "histogram", "funnel",
+            "waterfall", "ohlc", "candlestick", "scatterpolar", "scattergeo",
+            "scattermapbox", "scatterternary", "scatter3d", "barpolar",
+            "cone", "streamtube", "choropleth", "choroplethmapbox"
+        }:
+            marker["color"] = trace_color
+            if isinstance(trace.get("line"), dict):
+                trace["line"]["color"] = trace_color
+            if isinstance(marker.get("line"), dict):
+                marker["line"]["color"] = trace_color
+            if "fillcolor" in trace:
+                trace["fillcolor"] = trace_color
+            marker.setdefault("line", {})
+            marker["line"].setdefault("width", 1)
+            marker["line"].setdefault("color", "rgba(12,18,30,0.65)")
+
+        if trace_type in {"scatter", "scatter3d", "scattergeo", "scatterpolar", "scatterternary"}:
+            if str(trace.get("mode", "")).find("lines") >= 0:
+                trace.setdefault("line", {})
+                trace["line"].setdefault("width", 3)
+                trace["line"].setdefault("shape", "spline")
+            if str(trace.get("mode", "")).find("markers") >= 0:
+                marker.setdefault("size", 8)
+                marker.setdefault("opacity", 0.95)
+
+        if trace_type in {"bar", "histogram", "waterfall", "funnel"}:
+            trace.setdefault("opacity", 0.96)
+            trace.setdefault("cliponaxis", False)
+            # If many bars exist in one trace, color each bar using palette.
+            x_vals = trace.get("x")
+            y_vals = trace.get("y")
+            n_points = len(x_vals) if isinstance(x_vals, list) else (len(y_vals) if isinstance(y_vals, list) else 0)
+            if n_points > 1:
+                marker["color"] = get_pylogue_color_palette(n_points)
+
+        # Pie-family traces need per-slice colors.
+        if trace_type in {"pie", "sunburst", "treemap", "icicle", "funnelarea"}:
+            if trace_type == "pie":
+                _improve_pie_representation(trace)
+            if isinstance(trace.get("labels"), list):
+                n_items = len(trace["labels"])
+            elif isinstance(trace.get("ids"), list):
+                n_items = len(trace["ids"])
+            elif isinstance(trace.get("values"), list):
+                n_items = len(trace["values"])
+            elif isinstance(trace.get("x"), list):
+                n_items = len(trace["x"])
+            else:
+                n_items = len(palette)
+            marker["colors"] = get_pylogue_color_palette(max(1, n_items))
+
+        # Force continuous palette scale for heatmap-like traces.
+        if trace_type in {"heatmap", "contour", "histogram2d", "histogram2dcontour", "surface"}:
+            if default_colorscale:
+                trace["colorscale"] = default_colorscale
+            if isinstance(marker, dict):
+                marker["colorscale"] = default_colorscale
+
+        if isinstance(trace.get("name"), str):
+            trace.setdefault("textfont", {})
+            _set_font_color(trace["textfont"])
+        if isinstance(trace.get("colorbar"), dict):
+            colorbar = trace["colorbar"]
+            colorbar.setdefault("tickfont", {})
+            _set_font_color(colorbar["tickfont"])
+            if "title" in colorbar:
+                colorbar["title"] = _set_title_color(colorbar["title"])
+        if isinstance(marker, dict) and isinstance(marker.get("colorbar"), dict):
+            colorbar = marker["colorbar"]
+            colorbar.setdefault("tickfont", {})
+            _set_font_color(colorbar["tickfont"])
+            if "title" in colorbar:
+                colorbar["title"] = _set_title_color(colorbar["title"])
 
 
 def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_python: str):
@@ -81,6 +368,8 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
             "px": px,
             "go": go,
             "make_subplots": make_subplots,
+            "get_pylogue_colors": get_pylogue_color_palette,
+            "PYLOGUE_COLORS": PYLOGUE_COLORS,
         }
         if sql_query_runner is not None and sql_query is not None:
             df = pd.DataFrame(sql_query_runner(sql_query))
@@ -106,6 +395,7 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
 
         try:
             fig_json = fig.to_plotly_json()
+            _apply_plotly_theme(fig_json)
         except Exception as exc:  # noqa: BLE001
             logger.exception(
                 "Plotly serialization failed: fig_type={}, code_preview={!r}",
@@ -283,7 +573,9 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
         srcdoc = (
             "<!doctype html><html><head><meta charset='utf-8'/>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'/>"
-            "<style>html,body{margin:0;padding:0;background:#fff;overflow:hidden;}"
+            "<style>html,body{margin:0;padding:0;background:"
+            f"{THEME_BG_GRADIENT};color:{THEME_TEXT};overflow:hidden;"
+            "}"
             "#plot-wrap{width:100%;max-width:100%;}</style>"
             "</head><body>"
             f"{script_html}"
