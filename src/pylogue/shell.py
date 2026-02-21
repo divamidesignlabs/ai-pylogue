@@ -256,6 +256,7 @@ def app_factory(
                 ),
                 cls="sidebar-header",
             ),
+            Div(id="chat-list", cls="chat-list"),
             Button(
                 # UkIcon("plus"),
                 Span("New chat"),
@@ -263,7 +264,6 @@ def app_factory(
                 type="button",
                 id="new-chat-btn",
             ),
-            Div(id="chat-list", cls="chat-list"),
             cls="sidebar",
         )
 

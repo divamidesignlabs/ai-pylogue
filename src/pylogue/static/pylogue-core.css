@@ -142,8 +142,7 @@ html {
 
 .tool-status--running {
   position: relative;
-  /* overflow: hidden; */
-   color:#9CA3AF;
+  color: #9CA3AF;
 }
 
 .tool-status--running::after {
@@ -170,6 +169,20 @@ html {
 @keyframes tool-shimmer {
   0% { transform: translateX(0); }
   100% { transform: translateX(100%); }
+}
+
+.assistant-loading {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(241, 241, 241, 0.35);
+  border-top-color: #f1f1f1;
+  animation: assistant-spin 0.85s linear infinite;
+}
+
+@keyframes assistant-spin {
+  to { transform: rotate(360deg); }
 }
 
 .marked a {
@@ -362,6 +375,24 @@ html {
   font-size: 0.9rem;
   padding: 10px 12px;
   margin: 8px 0;
+}
+
+.marked .tool-html {
+  margin: 14px 0;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(138, 207, 249, 0.28);
+  /* background: linear-gradient(180deg, rgba(48, 59, 87, 0.35) 0%, rgba(12, 18, 30, 0.35) 100%);
+  box-shadow:
+    0 0 0 1px rgba(118, 142, 248, 0.2) inset,
+    0 0 18px rgba(138, 207, 249, 0.22),
+    0 0 38px rgba(118, 142, 248, 0.18); */
+}
+
+.marked .tool-html iframe,
+.marked .tool-html canvas,
+.marked .tool-html svg {
+  border-radius: 10px;
 }
 
 .marked ul,
