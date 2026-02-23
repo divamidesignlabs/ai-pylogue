@@ -46,7 +46,7 @@ html {
 }
 
 .chat-row-user {
-  margin: 0 1px;
+  margin: 0 20px;
   clear: both;
   color: #9ca3af;
 }
@@ -55,6 +55,7 @@ html {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  margin-left: 0;
 }
 
 .user-icon {
@@ -96,6 +97,10 @@ html {
   clear: both;
 }
 
+.chat-row-assistant .marked {
+  margin-left: 36px;
+}
+
 .chat-row-block {
   padding: 3px 7px;
   clear: both;
@@ -105,6 +110,8 @@ html {
 .chat-row-assistant .marked:has(.tool-html) {
   display: flex;
   flex-direction: column;
+  padding-left: 0;
+  margin-left: 36px;
 }
 
 .chat-row-assistant .marked:has(.tool-html) .tool-html {
@@ -132,8 +139,7 @@ html {
 .tool-status {
   display: block;
   width: fit-content;
-  padding: 0.3rem 0.6rem;
-  margin: 5px 0;
+  margin: 5px 0 5px 0px;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 600;
@@ -378,7 +384,7 @@ html {
 }
 
 .marked .tool-html {
-  margin: 14px 0;
+  margin: 14px 0 14px 0;
   padding: 8px;
   border-radius: 14px;
   border: 1px solid rgba(138, 207, 249, 0.28);

@@ -27,7 +27,6 @@ def _app_factory():
         responder_factory=lambda: AgnoResponder(agent=agent),
         hero_title="SQL Agent",
         hero_subtitle="Ask questions about the Insurance Database",
-        sidebar_title="History"
     )
 
 
