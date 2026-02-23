@@ -7,7 +7,6 @@ from pylogue.integrations.pydantic_ai import PydanticAIResponder
 def _app_factory():
     return app_factory(
         responder_factory=lambda: PydanticAIResponder(agent=agent),
-        sidebar_title="Dialogues with AI",
         hero_title="Powered by Pylogue",
         hero_subtitle="A chat application with conversation histories built using Fast HTML and Pylogue Core.",
     )

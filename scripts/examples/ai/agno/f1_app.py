@@ -26,7 +26,6 @@ def _app_factory():
         responder_factory=lambda: AgnoResponder(agent=sql_agent),
         hero_title="F1 Dashboard Agent",
         hero_subtitle="Ask questions about the F1 database and get SQL queries in response.",
-        sidebar_title="History"
     )
 
 

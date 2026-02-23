@@ -17,7 +17,6 @@ def _app_factory():
         ),
         hero_title="IPL Dashboard Agent",
         hero_subtitle="Ask questions about IPL data and get responsive Plotly charts.",
-        sidebar_title="History",
     )
 
 
