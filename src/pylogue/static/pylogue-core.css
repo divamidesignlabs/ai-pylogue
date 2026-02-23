@@ -484,7 +484,7 @@ html {
 }
 
 .copy-chat-btn:hover {
-  color: #1f2937;
+  color: inherit;
 }
 
 .copy-chat-btn svg {
