@@ -59,6 +59,9 @@ def safe_dom_id(value: str | None) -> str:
     return "".join(safe) or "tool-status"
 
 
+TOOL_STATUS_SINGLE_ID = "tool-status-active"
+
+
 def format_tool_result_summary(tool_name: str, args, result):
     tool_label = html.escape(tool_name or "tool")
     safe_args = html.escape(safe_json(args))
@@ -78,10 +81,10 @@ def format_tool_status_running(tool_name: str, args, call_id: str | None):
     if isinstance(args, dict):
         purpose = args.get("purpose")
     label = purpose or (tool_name.replace("_", " ").title() if tool_name else "Working")
-    status_id = safe_dom_id(f"tool-status-{call_id or ''}")
+    status_id = TOOL_STATUS_SINGLE_ID
     safe_label = html.escape(str(label))
     return (
-        f'<div id="{status_id}" class="tool-status tool-status--running">{safe_label}</div>\n'
+        f'<div class="tool-status-update" data-target-id="{status_id}" data-status="running">{safe_label}</div>\n'
     )
 
 
@@ -98,12 +101,12 @@ def format_tool_status_done(args, call_id: str | None, tool_name: str | None = N
     else:
         safe_label = "Task"
     
-    status_id = safe_dom_id(f"tool-status-{call_id or ''}")
+    status_id = TOOL_STATUS_SINGLE_ID
     safe_label_escaped = html.escape(safe_label)
     # Show process name + highlighted completion status
     return (
-        f'<div class="tool-status-update" data-target-id="{status_id}">'
-        f'{safe_label_escaped} <span class="tool-status-check">✓Completed</span></div>\n'
+        f'<div class="tool-status-update" data-target-id="{status_id}" data-status="done">'
+        f'{safe_label_escaped} <span class="tool-status-check">&#10003;Completed</span></div>\n'
     )
 
 
