@@ -39,7 +39,6 @@ def _app_factory():
         responder_factory=lambda: PydanticAIResponder(agent=agent, agent_deps=deps),
         hero_title="OPTINN AI",
         hero_subtitle="Perform RCA and Scenario Analysis for SCM issues",
-        sidebar_title="OPTINN SCM Assistant",
     )
 
 

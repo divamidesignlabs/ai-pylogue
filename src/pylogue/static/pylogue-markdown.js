@@ -349,16 +349,26 @@ const applyToolStatusUpdates = (root = document) => {
     updates.forEach((update) => {
         const targetId = update.getAttribute("data-target-id");
         if (!targetId) return;
-        const target = document.getElementById(targetId);
-        if (!target) {
-            update.remove();
-            return;
-        }
+        const status = (update.getAttribute("data-status") || "done")
+            .toLowerCase()
+            .trim();
+        const statusClass =
+            status === "running" ? "tool-status--running" : "tool-status--done";
+        const existing = Array.from(
+            document.querySelectorAll(`[id="${targetId}"]`),
+        );
+        const target = existing.length ? existing[existing.length - 1] : null;
         const replacement = document.createElement("div");
-        replacement.className = "tool-status tool-status--done";
+        replacement.id = targetId;
+        replacement.className = `tool-status ${statusClass}`;
         replacement.innerHTML = update.innerHTML || "Completed";
-        target.replaceWith(replacement);
-        update.remove();
+        if (target) {
+            target.replaceWith(replacement);
+            update.remove();
+            existing.slice(0, -1).forEach((node) => node.remove());
+        } else {
+            update.replaceWith(replacement);
+        }
     });
 };
 window.__applyToolStatusUpdates = applyToolStatusUpdates;
