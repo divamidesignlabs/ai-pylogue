@@ -21,7 +21,7 @@
 
 html, body {
   margin: 0;
-  background: linear-gradient(180deg, #303b57 0%, #0c121e 100%);
+  background: linear-gradient(180deg, #303b57 100%);
   color: #9ca3af;
   font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }

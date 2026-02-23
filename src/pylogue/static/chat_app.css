@@ -26,7 +26,7 @@
 
 body {
   font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
-  background: linear-gradient(180deg, #303b57 0%, #0c121e 100%);
+  /* background: linear-gradient(180deg, #303b57 0%, #0c121e 100%); */
   color: var(--ink-muted);
 }
 
