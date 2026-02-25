@@ -1,11 +1,15 @@
 import html as html_lib
 import json
+import math
+import re
 
 from loguru import logger
 from pylogue.embeds import store_html
 
 THEME_TEXT = "#F1F1F1"
 THEME_BG_GRADIENT = "linear-gradient(180deg, #303B57 0%, #0C121E 100%)"
+COMPACT_NUMBER_FORMAT = ".2~s"
+PERCENT_FORMAT = ".2%"
 
 
 try:
@@ -75,8 +79,10 @@ def _set_font_color(font_obj):
 
 def _set_title_color(title_obj):
     if isinstance(title_obj, str):
-        return {"text": title_obj, "font": {"color": THEME_TEXT}}
+        return {"text": _humanize_field_name(title_obj), "font": {"color": THEME_TEXT}}
     if isinstance(title_obj, dict):
+        if isinstance(title_obj.get("text"), str):
+            title_obj["text"] = _humanize_field_name(title_obj["text"])
         title_obj.setdefault("font", {})
         _set_font_color(title_obj["font"])
         return title_obj
@@ -88,6 +94,114 @@ def _to_float(value):
         return float(value)
     except Exception:
         return None
+
+
+def _is_missing_value(value) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, float) and math.isnan(value):
+        return True
+    if isinstance(value, str) and value.strip().lower() in {"", "nan", "none", "null", "nat"}:
+        return True
+    return False
+
+
+def _replace_missing_with_unknown(values):
+    if not isinstance(values, list):
+        return values
+    return ["Unknown" if _is_missing_value(v) else v for v in values]
+
+
+def _replace_missing_in_customdata(customdata):
+    if not isinstance(customdata, list):
+        return customdata
+    fixed = []
+    for row in customdata:
+        if isinstance(row, list):
+            fixed.append(["Unknown" if _is_missing_value(cell) else cell for cell in row])
+        else:
+            fixed.append("Unknown" if _is_missing_value(row) else row)
+    return fixed
+
+
+def _normalize_trace_labels(trace: dict, trace_type: str):
+    if not isinstance(trace, dict):
+        return
+    orientation = str(trace.get("orientation", "v")).lower()
+
+    if trace_type in {"bar", "histogram", "waterfall", "funnel", "scatter", "scatter3d", "scattergeo", "scatterpolar", "scatterternary", "box", "violin"}:
+        category_key = "y" if orientation == "h" else "x"
+        if isinstance(trace.get(category_key), list):
+            trace[category_key] = _replace_missing_with_unknown(trace[category_key])
+
+    if trace_type in {"pie", "sunburst", "treemap", "icicle", "funnelarea"}:
+        if isinstance(trace.get("labels"), list):
+            trace["labels"] = _replace_missing_with_unknown(trace["labels"])
+        if isinstance(trace.get("ids"), list):
+            trace["ids"] = _replace_missing_with_unknown(trace["ids"])
+        if isinstance(trace.get("parents"), list):
+            trace["parents"] = _replace_missing_with_unknown(trace["parents"])
+
+    if isinstance(trace.get("text"), list):
+        trace["text"] = _replace_missing_with_unknown(trace["text"])
+
+    if "customdata" in trace:
+        trace["customdata"] = _replace_missing_in_customdata(trace.get("customdata"))
+
+
+def _humanize_field_name(label: str) -> str:
+    text = str(label or "").strip()
+    if not text:
+        return text
+    lowered = text.lower()
+    if lowered in {"expr0", "expr1", "expr2", "value", "values"}:
+        return "Value"
+    if "." in text:
+        text = text.split(".")[-1]
+    text = re.sub(r"__c$", "", text, flags=re.IGNORECASE)
+    text = text.replace("_", " ")
+    text = re.sub(r"\s+", " ", text).strip()
+    if not text:
+        return "Value"
+    return text[:1].upper() + text[1:]
+
+
+def _sanitize_hovertemplate(template: str) -> str:
+    if not isinstance(template, str) or not template:
+        return template
+
+    # Humanize labels before ":" in segments like "<br>field_name: %{y}"
+    def _colon_label(match):
+        prefix = match.group(1)
+        label = match.group(2)
+        return f"{prefix}{_humanize_field_name(label)}: %{{"
+
+    text = re.sub(r"(^|<br>)([^:<>{}%][^:<>{}%]*):\s*%\{", _colon_label, template)
+
+    # Humanize labels before "=" in segments like "<br>expr0=%{y}"
+    def _equals_label(match):
+        prefix = match.group(1)
+        label = match.group(2)
+        return f"{prefix}{_humanize_field_name(label)}=%{{"
+
+    text = re.sub(r"(^|<br>)([^=<>{}%][^=<>{}%]*)=%\{", _equals_label, text)
+
+    # Ensure numeric placeholders use one centralized compact format (K/M/B).
+    # Do not force-format %{x}: in many charts x is categorical text (e.g., owner name).
+    text = re.sub(r"%\{(y|z|value)(:[^}]*)?\}", rf"%{{\1:{COMPACT_NUMBER_FORMAT}}}", text)
+    # Ensure percentage placeholders use two decimals.
+    text = re.sub(r"%\{percent(:[^}]*)?\}", rf"%{{percent:{PERCENT_FORMAT}}}", text)
+    return text
+
+
+def _force_two_decimal_axis(axis: dict):
+    if not isinstance(axis, dict):
+        return
+    axis["tickformat"] = COMPACT_NUMBER_FORMAT
+    if isinstance(axis.get("hoverformat"), str) or "hoverformat" in axis:
+        axis["hoverformat"] = COMPACT_NUMBER_FORMAT
+    else:
+        axis.setdefault("hoverformat", COMPACT_NUMBER_FORMAT)
 
 
 def _improve_pie_representation(trace: dict):
@@ -128,19 +242,28 @@ def _improve_pie_representation(trace: dict):
     trace["values"] = [v for _, v in major]
     trace["sort"] = True
     trace["direction"] = "clockwise"
-    trace["textinfo"] = "percent"
+    trace["textinfo"] = "none"
+    trace["texttemplate"] = f"%{{percent:{PERCENT_FORMAT}}}"
     trace["textposition"] = "inside"
-    trace["hovertemplate"] = "%{label}<br>%{value:,.0f} (%{percent})<extra></extra>"
+    trace["hovertemplate"] = (
+        f"%{{label}}<br>%{{value:{COMPACT_NUMBER_FORMAT}}} "
+        f"(%{{percent:{PERCENT_FORMAT}}})<extra></extra>"
+    )
 
 
 def _set_default_hovertemplate(trace: dict, trace_type: str):
     if trace.get("hovertemplate"):
+        trace["hovertemplate"] = _sanitize_hovertemplate(trace["hovertemplate"])
         return
     if trace_type in {"heatmap", "contour", "histogram2d", "histogram2dcontour", "surface"}:
-        trace["hovertemplate"] = "x: %{x}<br>y: %{y}<br>value: %{z:,.2f}<extra></extra>"
+        trace["hovertemplate"] = (
+            f"Category: %{{x}}<br>Series: %{{y}}<br>Value: %{{z:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
+        )
         return
     if trace_type in {"bar", "histogram", "waterfall", "funnel", "scatter", "scatter3d", "scattergeo", "scatterpolar", "scatterternary", "box", "violin"}:
-        trace["hovertemplate"] = "x: %{x}<br>y: %{y:,.2f}<extra></extra>"
+        trace["hovertemplate"] = (
+            f"Category: %{{x}}<br>Amount: %{{y:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
+        )
         return
 
 
@@ -191,6 +314,7 @@ def _apply_plotly_theme(fig_json: dict):
         axis["color"] = THEME_TEXT
         axis.setdefault("tickfont", {})
         _set_font_color(axis["tickfont"])
+        _force_two_decimal_axis(axis)
         axis["automargin"] = True
         axis.setdefault("gridcolor", "rgba(58,71,93,0.45)")
         axis.setdefault("linecolor", "rgba(241,241,241,0.35)")
@@ -221,6 +345,7 @@ def _apply_plotly_theme(fig_json: dict):
             value["colorscale"] = default_colorscale
         colorbar = value.get("colorbar")
         if isinstance(colorbar, dict):
+            colorbar["tickformat"] = COMPACT_NUMBER_FORMAT
             colorbar.setdefault("tickfont", {})
             _set_font_color(colorbar["tickfont"])
             if "title" in colorbar:
@@ -231,6 +356,7 @@ def _apply_plotly_theme(fig_json: dict):
             continue
         trace_type = str(trace.get("type", "")).lower()
         trace_color = palette[idx % len(palette)]
+        _normalize_trace_labels(trace, trace_type)
         _set_default_hovertemplate(trace, trace_type)
 
         marker = trace.get("marker")
@@ -303,12 +429,14 @@ def _apply_plotly_theme(fig_json: dict):
             _set_font_color(trace["textfont"])
         if isinstance(trace.get("colorbar"), dict):
             colorbar = trace["colorbar"]
+            colorbar["tickformat"] = COMPACT_NUMBER_FORMAT
             colorbar.setdefault("tickfont", {})
             _set_font_color(colorbar["tickfont"])
             if "title" in colorbar:
                 colorbar["title"] = _set_title_color(colorbar["title"])
         if isinstance(marker, dict) and isinstance(marker.get("colorbar"), dict):
             colorbar = marker["colorbar"]
+            colorbar["tickformat"] = COMPACT_NUMBER_FORMAT
             colorbar.setdefault("tickfont", {})
             _set_font_color(colorbar["tickfont"])
             if "title" in colorbar:
