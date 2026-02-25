@@ -175,6 +175,12 @@ document.addEventListener("keydown", (event) => {
     if (!msgInput || document.activeElement !== msgInput) return;
     const form = document.getElementById("form");
     if (!form) return;
+    // Block sending if answer is generating (send mode is 'stop')
+    const sendBtn = document.getElementById("chat-send-btn");
+    if (sendBtn && sendBtn.dataset.mode === "stop") {
+        event.preventDefault();
+        return;
+    }
     event.preventDefault();
     form.requestSubmit();
 });
