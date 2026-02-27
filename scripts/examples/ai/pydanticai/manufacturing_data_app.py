@@ -189,7 +189,7 @@ def _app_factory():
         responder_factory=lambda: PydanticAIResponder(
             agent=agent,
             agent_deps=deps,
-            show_tool_details=True,
+            show_tool_details=False,
         ),
         hero_title="Enterprise Brain for Manufacturing",
         hero_subtitle="Ask questions about manufacturing data and get responsive Plotly charts.",
