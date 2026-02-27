@@ -266,14 +266,54 @@ const renderMarkdown = (root = document) => {
             return;
         }
         if (looksLikeHtmlBlock(normalizedSource)) {
-            el.innerHTML = normalizedSource;
-            // Scroll after HTML content (like charts) is rendered
+            // Mark as rendered BEFORE setting innerHTML to prevent re-render loop
+            el.dataset.renderedSource = source;
+            
+            // Prevent re-rendering of iframes - they should only render once
+            if (el.querySelector('iframe[data-chart-iframe="true"]') && newContent.includes('<iframe')) {
+                const existingIframe = el.querySelector('iframe[data-chart-iframe="true"]');
+                // If iframe already exists and is the same chart, do nothing
+                if (existingIframe.dataset.rendered === 'true') {
+                    return; // Skip completely
+                }
+            }
+            
+            // Check if content is actually different before replacing
+            const currentContent = el.innerHTML.trim();
+            const newContent = normalizedSource.trim();
+            if (currentContent === newContent) {
+                return; // Skip if content is identical
+            }
+            
+            // For iframe content, prevent flicker by keeping existing iframe visible during replacement
+            const existingIframe = el.querySelector('iframe');
+            if (existingIframe && newContent.includes('<iframe')) {
+                // Smoothly transition: keep old iframe while new one loads
+                existingIframe.style.transition = 'opacity 0.2s ease';
+                existingIframe.style.opacity = '0';
+                setTimeout(() => {
+                    el.innerHTML = normalizedSource;
+                    // Mark new iframe insert time and as rendered
+                    const newIframe = el.querySelector('iframe[data-chart-iframe="true"]');
+                    if (newIframe) {
+                        newIframe.dataset.insertTime = Date.now();
+                        newIframe.dataset.rendered = 'true';
+                    }
+                }, 200);
+            } else {
+                el.innerHTML = normalizedSource;
+                // Mark iframe insert time and as rendered
+                const iframe = el.querySelector('iframe[data-chart-iframe="true"]');
+                if (iframe) {
+                    iframe.dataset.insertTime = Date.now();
+                    iframe.dataset.rendered = 'true';
+                }
+            }
+            
+            // Apply status updates after HTML content is rendered
             requestAnimationFrame(() => {
                 if (window.__applyToolStatusUpdates) {
                     window.__applyToolStatusUpdates(document);
-                }
-                if (window.__forceScrollToBottom) {
-                    window.__forceScrollToBottom();
                 }
             });
             // Also apply status updates with a slight delay to catch late arrivals
@@ -288,8 +328,8 @@ const renderMarkdown = (root = document) => {
             renderMath(el);
             highlightCode(el);
             addCopyButtons(el);
+            el.dataset.renderedSource = source;
         }
-        el.dataset.renderedSource = source;
     });
     markdownRendering = false;
     if (window.__upgradeMermaidBlocks) {
@@ -793,6 +833,50 @@ const observeMermaid = () => {
 };
 
 window.__upgradeMermaidBlocks = upgradeMermaidBlocks;
+
+// Handle Plotly chart ready messages and fade in iframes
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'pylogue-chart-ready') {
+        const iframes = document.querySelectorAll('iframe[data-chart-iframe="true"]');
+        iframes.forEach((iframe) => {
+            if (!iframe.dataset.chartReady) {
+                iframe.style.transition = 'opacity 0.3s ease';
+                iframe.style.opacity = '1';
+                iframe.dataset.chartReady = 'true';
+                iframe.dataset.rendered = 'true';
+            }
+        });
+    }
+});
+
+// Simplified fallback: show chart after 250ms if not shown yet
+const ensureChartIframesVisible = () => {
+    const iframes = document.querySelectorAll('iframe[data-chart-iframe="true"]');
+    iframes.forEach((iframe) => {
+        // Skip if already shown
+        if (iframe.dataset.chartReady === 'true') return;
+        
+        // Check timing
+        if (!iframe.dataset.insertTime) {
+            iframe.dataset.insertTime = Date.now();
+            return;
+        }
+        
+        const elapsed = Date.now() - parseInt(iframe.dataset.insertTime);
+        if (elapsed > 250) {
+            iframe.style.transition = 'opacity 0.3s ease';
+            iframe.style.opacity = '1';
+            iframe.dataset.chartReady = 'true';
+            iframe.dataset.rendered = 'true';
+        }
+    });
+};
+
+// Check every 100ms for fast response
+const visibilityInterval = setInterval(ensureChartIframesVisible, 100);
+
+// Stop checking after 5 seconds
+setTimeout(() => clearInterval(visibilityInterval), 5000);
 
 document.addEventListener("DOMContentLoaded", () => {
     observeMermaid();
