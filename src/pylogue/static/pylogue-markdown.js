@@ -266,14 +266,21 @@ const renderMarkdown = (root = document) => {
             return;
         }
         if (looksLikeHtmlBlock(normalizedSource)) {
+            // Mark as rendered BEFORE setting innerHTML to prevent re-render loop
+            el.dataset.renderedSource = source;
+            
+            // Check if content is actually different before replacing
+            const currentContent = el.innerHTML.trim();
+            const newContent = normalizedSource.trim();
+            if (currentContent === newContent) {
+                return; // Skip if content is identical
+            }
+            
             el.innerHTML = normalizedSource;
-            // Scroll after HTML content (like charts) is rendered
+            // Apply status updates after HTML content is rendered
             requestAnimationFrame(() => {
                 if (window.__applyToolStatusUpdates) {
                     window.__applyToolStatusUpdates(document);
-                }
-                if (window.__forceScrollToBottom) {
-                    window.__forceScrollToBottom();
                 }
             });
             // Also apply status updates with a slight delay to catch late arrivals
@@ -288,8 +295,8 @@ const renderMarkdown = (root = document) => {
             renderMath(el);
             highlightCode(el);
             addCopyButtons(el);
+            el.dataset.renderedSource = source;
         }
-        el.dataset.renderedSource = source;
     });
     markdownRendering = false;
     if (window.__upgradeMermaidBlocks) {

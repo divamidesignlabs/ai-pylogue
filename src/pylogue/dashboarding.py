@@ -535,7 +535,19 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
         layout = fig_json.get("layout") or {}
         user_height = layout.get("height")
         has_explicit_height = isinstance(user_height, (int, float))
-        default_height = int(user_height) if has_explicit_height else 420
+        
+        # Pre-calculate mobile-friendly height to match client-side logic
+        # This prevents height mismatch and eliminates flickering
+        if has_explicit_height:
+            default_height = int(user_height)
+        else:
+            # Match the mobileHeight() calculation from JavaScript
+            # const w=Math.max(280, Math.min(window.innerWidth||1024, 1400));
+            # return Math.max(280, Math.min(560, Math.round(w*0.6)));
+            # Use a sensible default viewport width for server-side calculation
+            assumed_width = 1024  # reasonable default for most devices
+            calculated_height = max(280, min(560, round(assumed_width * 0.6)))
+            default_height = calculated_height
 
         if not has_explicit_height:
             # Let Plotly autosize width while we manage a mobile-friendly height.
@@ -686,14 +698,24 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
             "}"
             "render();"
             "setupLinkedInteraction();"
+            "setTimeout(()=>{document.body.classList.add('ready');},50);"
+            "let resizeTimeout=null;"
             "const ro=new ResizeObserver(()=>{"
+            "if(resizeTimeout) return;"
+            "resizeTimeout=setTimeout(()=>{"
+            "resizeTimeout=null;"
             "render();"
             "try{Plotly.Plots.resize(gd);}catch(e){}"
+            "},100);"
             "});"
             "ro.observe(document.body);"
+            "let windowResizeTimeout=null;"
             "window.addEventListener('resize', ()=>{"
+            "if(windowResizeTimeout) clearTimeout(windowResizeTimeout);"
+            "windowResizeTimeout=setTimeout(()=>{"
             "render();"
             "try{Plotly.Plots.resize(gd);}catch(e){}"
+            "},150);"
             "});"
             "</script>"
         )
@@ -705,6 +727,8 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
             "html,body{margin:0;padding:0;background:"
             f"{THEME_BG_GRADIENT};color:{THEME_TEXT};overflow:hidden;"
             "}"
+            "body{opacity:0;transition:opacity 0.3s ease;}"
+            "body.ready{opacity:1;}"
             # "#plot-wrap{"
             # "width:100%;max-width:100%;"
             # "border-radius:18px;"
@@ -733,7 +757,7 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
             f'srcdoc="{escaped_srcdoc}" '
             f'height="{default_height}" '
             "style=\"width:100%;max-width:100%;height:"
-            f"{default_height}px;border:0;display:block;\" "
+            f"{default_height}px;border:0;display:block;transition:height 0.2s ease;\" "
             'title="Plotly Chart"></iframe>'
         )
         html_id = store_html(iframe_html)
