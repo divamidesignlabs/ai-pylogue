@@ -93,11 +93,22 @@ Optional auth toggle:
 export PYLOGUE_AUTH_REQUIRED="true"
 ```
 
+## Simple Login (Fixed Credentials)
+You can also enable a built-in username/password login:
+```bash
+export PYLOGUE_AUTH_REQUIRED="true"
+export PYLOGUE_SIMPLE_AUTH_USERNAME="user"
+export PYLOGUE_SIMPLE_AUTH_PASSWORD="password"
+export PYLOGUE_SESSION_SECRET="a-long-random-secret"
+```
+
 When enabled, Pylogue registers:
 - `/login`
+- `/logout`
+
+For Google OAuth only, it also registers:
 - `/login/google`
 - `/auth/google/callback`
-- `/logout`
 
 ## How Streaming Works (Short Version)
 - Browser connects to `/ws`.
