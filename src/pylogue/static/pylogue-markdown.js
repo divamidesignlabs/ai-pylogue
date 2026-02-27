@@ -276,7 +276,19 @@ const renderMarkdown = (root = document) => {
                 return; // Skip if content is identical
             }
             
-            el.innerHTML = normalizedSource;
+            // For iframe content, prevent flicker by keeping existing iframe visible during replacement
+            const existingIframe = el.querySelector('iframe');
+            if (existingIframe && newContent.includes('<iframe')) {
+                // Smoothly transition: keep old iframe while new one loads
+                existingIframe.style.transition = 'opacity 0.2s ease';
+                existingIframe.style.opacity = '0';
+                setTimeout(() => {
+                    el.innerHTML = normalizedSource;
+                }, 200);
+            } else {
+                el.innerHTML = normalizedSource;
+            }
+            
             // Apply status updates after HTML content is rendered
             requestAnimationFrame(() => {
                 if (window.__applyToolStatusUpdates) {
