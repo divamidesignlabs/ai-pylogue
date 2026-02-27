@@ -14,6 +14,8 @@ from pydantic_ai import Agent, RunContext
 from pylogue.dashboarding import render_plotly_chart_py
 from pylogue.integrations.pydantic_ai import PydanticAIResponder
 from pylogue.shell import app_factory
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 load_dotenv(override=True)
 
@@ -105,16 +107,25 @@ if csv_path is None:
     raise FileNotFoundError(f"Could not find dataset in {data_dir} with names: {csv_candidates}")
 df = pd.read_csv(csv_path)
 
-# LITELLM_API_KEY="sk-7nv7MmgfWP5kGLeRK7ApJw6662342"
-# LITELLM_API_BASE_URL="https://litellm.divami.com/"
-# MODEL_NAME="divami-gemini/gemini-2.5-flash"
+
+LITELLM_API_KEY = os.getenv("LITELLM_API_KEY")
+LITELLM_API_BASE_URL = os.getenv("LITELLM_API_BASE_URL")
+MODEL_NAME = os.getenv("MODEL_NAME")
+
+# Create OpenAI provider pointing to LiteLLM
+provider = OpenAIProvider(
+    base_url=LITELLM_API_BASE_URL,
+    api_key=LITELLM_API_KEY
+)
+
+# Create the shared model instance
+model = OpenAIChatModel(model_name=MODEL_NAME, provider=provider)
 
 agent = Agent(
-    "google-gla:gemini-3-flash-preview",
+    model,
     instructions=instructions,
 )
 deps = None
-
 
 @agent.tool
 def run_python(ctx: RunContext[Any], python_code: str):
