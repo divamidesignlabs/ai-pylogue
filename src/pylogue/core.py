@@ -2,6 +2,7 @@
 from fasthtml.common import *
 from monsterui.all import Theme, Container, ContainerT, TextPresets, Button, ButtonT, FastHTML as MUFastHTML, UkIcon
 from dataclasses import dataclass
+from hmac import compare_digest
 from pathlib import Path
 from urllib.parse import quote_plus
 from starlette.requests import Request
@@ -31,6 +32,14 @@ class GoogleOAuthConfig:
     session_secret: str | None = None
 
 
+@dataclass(frozen=True)
+class SimpleAuthConfig:
+    username: str
+    password: str
+    auth_required: bool = True
+    session_secret: str | None = None
+
+
 def _split_csv_env(value: str | None) -> tuple[str, ...]:
     if not value:
         return ()
@@ -54,6 +63,19 @@ def google_oauth_config_from_env() -> GoogleOAuthConfig | None:
         client_secret=client_secret,
         allowed_domains=_split_csv_env(os.getenv("PYLOGUE_GOOGLE_ALLOWED_DOMAINS")),
         allowed_emails=_split_csv_env(os.getenv("PYLOGUE_GOOGLE_ALLOWED_EMAILS")),
+        auth_required=_env_bool("PYLOGUE_AUTH_REQUIRED", default=True),
+        session_secret=os.getenv("PYLOGUE_SESSION_SECRET"),
+    )
+
+
+def simple_auth_config_from_env() -> SimpleAuthConfig | None:
+    username = os.getenv("PYLOGUE_SIMPLE_AUTH_USERNAME")
+    password = os.getenv("PYLOGUE_SIMPLE_AUTH_PASSWORD")
+    if not (username and password):
+        return None
+    return SimpleAuthConfig(
+        username=username,
+        password=password,
         auth_required=_env_bool("PYLOGUE_AUTH_REQUIRED", default=True),
         session_secret=os.getenv("PYLOGUE_SESSION_SECRET"),
     )
@@ -248,6 +270,51 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
         "logout_path": logout_path,
         "default_next": default_next,
     }
+
+
+def _register_simple_auth_routes(app, cfg: SimpleAuthConfig, base_path: str = "") -> dict[str, str]:
+    base = _normalize_base_path(base_path)
+    login_path = f"{base}/login" if base else "/login"
+    logout_path = f"{base}/logout" if base else "/logout"
+    default_next = f"{base}/" if base else "/"
+
+    @app.route(login_path, methods=["GET", "POST"])
+    async def pylogue_simple_login(request: Request):
+        if request.method == "POST":
+            form = await request.form()
+            username = str(form.get("username") or "")
+            password = str(form.get("password") or "")
+            next_url = str(form.get("next") or request.session.get("next") or default_next)
+            if compare_digest(username, cfg.username) and compare_digest(password, cfg.password):
+                request.session["auth"] = {"provider": "simple", "username": cfg.username, "name": cfg.username}
+                request.session.pop("next", None)
+                return RedirectResponse(next_url, status_code=303)
+            return RedirectResponse(f"{login_path}?error=Invalid+username+or+password", status_code=303)
+
+        next_url = request.query_params.get("next") or request.session.get("next") or default_next
+        request.session["next"] = next_url
+        error = request.query_params.get("error")
+        return Div(
+            H2("Login", cls="uk-h2"),
+            Form(
+                Input(type="text", name="username", placeholder="Username", required=True, cls="uk-input mb-3"),
+                Input(type="password", name="password", placeholder="Password", required=True, cls="uk-input mb-3"),
+                Input(type="hidden", name="next", value=next_url),
+                Button("Sign in", type="submit", cls="uk-button uk-button-primary w-full"),
+                method="post",
+                cls="max-w-sm mx-auto mt-6",
+            ),
+            P(error, cls="text-red-500 mt-4") if error else None,
+            cls="prose mx-auto mt-24 text-center",
+        )
+
+    @app.route(logout_path)
+    async def pylogue_simple_logout(request: Request):
+        request.session.pop("auth", None)
+        request.session.pop("next", None)
+        return RedirectResponse(login_path, status_code=303)
+
+    return {"login_path": login_path, "logout_path": logout_path, "default_next": default_next}
 
 
 def register_core_static(app):
@@ -648,6 +715,7 @@ def register_routes(
     include_markdown: bool = True,
     tag_line_href: str = "",
     google_oauth_config: GoogleOAuthConfig | None = None,
+    simple_auth_config: SimpleAuthConfig | None = None,
     auth_required: bool | None = None,
 ):
     if responder_factory is None and responder is not None and hasattr(responder, "message_history"):
@@ -661,13 +729,20 @@ def register_routes(
     ws_path = f"{base_path}/ws" if base_path else "/ws"
 
     oauth_cfg = google_oauth_config or google_oauth_config_from_env()
+    simple_cfg = simple_auth_config or simple_auth_config_from_env()
+    if oauth_cfg and simple_cfg:
+        raise ValueError("Configure either Google OAuth or simple auth, not both.")
     if auth_required is None:
-        auth_required = bool(oauth_cfg and oauth_cfg.auth_required)
+        auth_required = bool(
+            (oauth_cfg and oauth_cfg.auth_required) or (simple_cfg and simple_cfg.auth_required)
+        )
     auth_paths = None
     if oauth_cfg:
         auth_paths = _register_google_auth_routes(app, oauth_cfg, base_path=base_path)
+    elif simple_cfg:
+        auth_paths = _register_simple_auth_routes(app, simple_cfg, base_path=base_path)
     elif auth_required:
-        raise ValueError("auth_required=True needs google_oauth_config or PYLOGUE_GOOGLE_* env vars.")
+        raise ValueError("auth_required=True needs Google OAuth or PYLOGUE_SIMPLE_AUTH_* env vars.")
 
     if inject_headers:
         for header in get_core_headers(include_markdown=include_markdown):
@@ -782,15 +857,21 @@ def main(
     include_markdown: bool = True,
     tag_line_href: str = "",
     google_oauth_config: GoogleOAuthConfig | None = None,
+    simple_auth_config: SimpleAuthConfig | None = None,
     auth_required: bool | None = None,
 ):
     if responder is None:
         responder = EchoResponder()
     headers = get_core_headers(include_markdown=include_markdown)
     oauth_cfg = google_oauth_config or google_oauth_config_from_env()
+    simple_cfg = simple_auth_config or simple_auth_config_from_env()
+    if oauth_cfg and simple_cfg:
+        raise ValueError("Configure either Google OAuth or simple auth, not both.")
     session_secret = (
         oauth_cfg.session_secret
         if oauth_cfg and oauth_cfg.session_secret
+        else simple_cfg.session_secret
+        if simple_cfg and simple_cfg.session_secret
         else os.getenv("PYLOGUE_SESSION_SECRET")
     )
     app_kwargs = {"exts": "ws", "hdrs": tuple(headers), "pico": False}
@@ -808,6 +889,7 @@ def main(
         tag_line_href=tag_line_href,
         base_path="",
         google_oauth_config=oauth_cfg,
+        simple_auth_config=simple_cfg,
         auth_required=auth_required,
     )
     return app

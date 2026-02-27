@@ -28,6 +28,7 @@ from pylogue.core import (
     EchoResponder,
     IMPORT_PREFIX,
     _register_google_auth_routes,
+    _register_simple_auth_routes,
     _session_cookie_name,
     google_oauth_config_from_env,
     get_core_headers,
@@ -35,6 +36,7 @@ from pylogue.core import (
     register_ws_routes,
     render_cards,
     render_input,
+    simple_auth_config_from_env,
 )
 from starlette.requests import Request
 from starlette.responses import FileResponse
@@ -93,10 +95,15 @@ def app_factory(
     )
 
     oauth_cfg = google_oauth_config_from_env()
-    auth_required = bool(oauth_cfg and oauth_cfg.auth_required)
+    simple_cfg = simple_auth_config_from_env()
+    if oauth_cfg and simple_cfg:
+        raise ValueError("Configure either Google OAuth or simple auth, not both.")
+    auth_required = bool((oauth_cfg and oauth_cfg.auth_required) or (simple_cfg and simple_cfg.auth_required))
     session_secret = (
         oauth_cfg.session_secret
         if oauth_cfg and oauth_cfg.session_secret
+        else simple_cfg.session_secret
+        if simple_cfg and simple_cfg.session_secret
         else os.getenv("PYLOGUE_SESSION_SECRET")
     )
     app_kwargs = {"exts": "ws", "hdrs": tuple(headers), "pico": False}
@@ -105,7 +112,13 @@ def app_factory(
         app_kwargs["secret_key"] = session_secret
     app = MUFastHTML(**app_kwargs)
     register_core_static(app)
-    auth_paths = _register_google_auth_routes(app, oauth_cfg) if oauth_cfg else None
+    auth_paths = (
+        _register_google_auth_routes(app, oauth_cfg)
+        if oauth_cfg
+        else _register_simple_auth_routes(app, simple_cfg)
+        if simple_cfg
+        else None
+    )
 
     def _is_authorized(request: Request) -> bool:
         if not auth_required:
