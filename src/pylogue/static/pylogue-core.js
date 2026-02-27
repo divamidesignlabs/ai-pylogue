@@ -170,8 +170,17 @@ document.addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
     // Shift+Enter allows new line, plain Enter submits
     if (event.shiftKey) return;
+    // Only submit if the message input (#msg) is focused
+    const msgInput = document.getElementById("msg");
+    if (!msgInput || document.activeElement !== msgInput) return;
     const form = document.getElementById("form");
     if (!form) return;
+    // Block sending if answer is generating (send mode is 'stop')
+    const sendBtn = document.getElementById("chat-send-btn");
+    if (sendBtn && sendBtn.dataset.mode === "stop") {
+        event.preventDefault();
+        return;
+    }
     event.preventDefault();
     form.requestSubmit();
 });

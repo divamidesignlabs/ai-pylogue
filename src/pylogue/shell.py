@@ -64,7 +64,6 @@ def app_factory(
     responder=None,
     responder_factory=None,
     db_path: Path | str | None = None,
-    sidebar_title: str = "Pylogue",
     hero_title: str = "Fast HTML + Pylogue Core",
     hero_subtitle: str = (
         "One UI wraps multiple Pylogue chat sessions. Pick a chat on the left, "
@@ -233,75 +232,83 @@ def app_factory(
         auth_required=auth_required,
     )
 
-    def _sidebar(request: Request):
-        show_logout = auth_required and _is_authorized(request)
-        logout_href = auth_paths["logout_path"] if auth_paths else "/logout"
+    def _history_dropdown():
         return Div(
             Div(
-                H1(sidebar_title, cls="text-xl font-semibold"),
-                Div(
-                    Button(
-                        "Close",
-                        type="button",
-                        id="close-sidebar-btn",
-                        cls=(ButtonT.secondary, "text-xs mobile-only-inline"),
+                H2("History"),
+                Button(
+                    NotStr(
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
                     ),
-                    A(
-                        UkIcon("sign-out"),
-                        Span("Logout"),
-                        href=logout_href,
-                        cls=(ButtonT.secondary, "text-xs"),
-                    ) if show_logout else None,
-                    cls="flex items-center gap-2",
+                    type="button",
+                    id="history-close-btn",
+                    cls="history-close-btn",
+                    title="Close",
+                    aria_label="Close history",
                 ),
-                cls="sidebar-header",
+                cls="history-header",
             ),
-            Button(
-                # UkIcon("plus"),
-                Span("New chat"),
-                cls=(ButtonT.secondary, "w-full justify-center"),
-                type="button",
-                id="new-chat-btn",
+            Div(
+                Input(
+                    type="text",
+                    id="chat-search",
+                    placeholder="Search Chat Name...",
+                    cls="chat-search-input",
+                ),
+                cls="history-search",
             ),
-            Div(id="chat-list", cls="chat-list"),
-            cls="sidebar",
+            Div(
+                Div(id="chat-list", cls="chat-list"),
+                cls="history-content",
+            ),
+            cls="history-dropdown",
         )
 
-    def _hero():
+    def _hero(user_info=None):
+        # Get first letter of user's name for profile button
+        user_initial = ""
+        if user_info:
+            name = user_info.get("name", "")
+            if name:
+                user_initial = name[0].upper()
+            else:
+                email = user_info.get("email", "")
+                user_initial = email[0].upper() if email else "U"
+        
         return Div(
             Div(
-                H2(hero_title, cls="hero-title"),
+                H3(hero_title, cls="hero-title"),
                 P(hero_subtitle, cls="hero-sub"),
                 cls="space-y-2",
             ),
             Div(
                 Button(
-                    "Chats",
+                    NotStr(
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+                    ),
+                    Span("New Chat"),
                     type="button",
-                    id="sidebar-toggle-btn",
-                    cls=(ButtonT.secondary, "mobile-only-inline"),
+                    id="new-chat-header-btn",
+                    cls="navbar-btn",
                 ),
                 Button(
-                    UkIcon("download"),
-                    cls="uk-button uk-button-text copy-chat-btn",
+                    NotStr(
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+                    ),
+                    Span("History"),
                     type="button",
-                    aria_label="Download conversation JSON",
-                    title="Download conversation JSON",
+                    id="history-toggle-btn",
+                    cls="navbar-btn",
                 ),
                 Button(
-                    UkIcon("upload"),
-                    cls="uk-button uk-button-text copy-chat-btn upload-chat-btn",
+                    Span(user_initial, cls="profile-initial"),
                     type="button",
-                    aria_label="Upload conversation JSON",
-                    title="Upload conversation JSON",
-                ),
-                Input(
-                    type="file",
-                    id="chat-upload",
-                    accept="application/json",
-                    cls="sr-only",
-                ),
-                cls="flex gap-2 justify-end",
+                    id="profile-toggle-btn",
+                    cls="profile-btn",
+                    aria_label="Profile menu",
+                    title="Profile menu",
+                ) if auth_required else None,
+                cls="flex gap-2 justify-end items-center",
             ),
             cls="hero",
         )
@@ -331,9 +338,9 @@ def app_factory(
             cls="chat-input-area",
         )
 
-    def _main_panel():
+    def _main_panel(user_info=None):
         return Div(
-            _hero(),
+            _hero(user_info),
             _chat_content(),
             _chat_input(),
             cls="main-panel",
@@ -374,26 +381,93 @@ def app_factory(
             tabindex="-1",
         )
     
-    def _shell(request: Request):
+    def _profile_dropdown(user_info):
+        user_name = user_info.get("name", "User") if user_info else "User"
+        return Div(
+            Div(
+                H2("Account"),
+                Button(
+                    NotStr(
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
+                    ),
+                    type="button",
+                    id="profile-close-btn",
+                    cls="history-close-btn",
+                    title="Close",
+                    aria_label="Close profile menu",
+                ),
+                cls="history-header",
+            ),
+            Div(
+                P(user_name, cls="profile-user-name"),
+                cls="profile-user-info",
+            ),
+            Div(
+                Button(
+                    NotStr(
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'
+                    ),
+                    Span("Download Chat"),
+                    type="button",
+                    cls="profile-menu-btn copy-chat-btn",
+                    aria_label="Download conversation JSON",
+                    title="Download conversation JSON",
+                ),
+                Button(
+                    NotStr(
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>'
+                    ),
+                    Span("Upload Chat"),
+                    type="button",
+                    cls="profile-menu-btn upload-chat-btn",
+                    aria_label="Upload conversation JSON",
+                    title="Upload conversation JSON",
+                ),
+                A(
+                    NotStr(
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>'
+                    ),
+                    Span("Logout"),
+                    href="/logout",
+                    cls="profile-menu-btn profile-logout-btn",
+                    aria_label="Logout",
+                    title="Logout",
+                ),
+                Input(
+                    type="file",
+                    id="chat-upload",
+                    accept="application/json",
+                    cls="sr-only",
+                ),
+                cls="profile-menu-actions",
+            ),
+            cls="profile-dropdown",
+        )
+
+    def _shell(user_info=None):
         return Div(
             Div(id="sidebar-backdrop", cls="sidebar-backdrop"),
-            _sidebar(request),
-            _main_panel(),
+            _history_dropdown(),
+            _profile_dropdown(user_info) if auth_required else None,
+            _main_panel(user_info),
             _delete_chat_modal(),
             cls="app-shell",
         )
 
     @app.route("/")
     def home(request: Request):
+        user_info = None
         if auth_required and not _is_authorized(request):
             request.session["next"] = "/"
             login_path = auth_paths["login_path"] if auth_paths else "/login"
             return RedirectResponse(login_path, status_code=303)
+        if auth_required:
+            user_info = request.session.get("auth")
         return (
             Title(hero_title),
             Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
             Body(
-                _shell(request),
+                _shell(user_info),
                 cls="min-h-screen",
                 data_import_prefix=IMPORT_PREFIX,
             ),

@@ -71,12 +71,28 @@ const getActiveChatTitle = () => {
 
 const isMobile = () => window.matchMedia(MOBILE_QUERY).matches;
 
-const openSidebar = () => {
-    document.body.classList.add("sidebar-open");
+const openHistory = () => {
+    document.body.classList.add("history-open");
 };
 
-const closeSidebar = () => {
-    document.body.classList.remove("sidebar-open");
+const closeHistory = () => {
+    document.body.classList.remove("history-open");
+};
+
+const toggleHistory = () => {
+    document.body.classList.toggle("history-open");
+};
+
+const openProfile = () => {
+    document.body.classList.add("profile-open");
+};
+
+const closeProfile = () => {
+    document.body.classList.remove("profile-open");
+};
+
+const toggleProfile = () => {
+    document.body.classList.toggle("profile-open");
 };
 
 const getDeleteModal = () => document.getElementById("delete-chat-modal");
@@ -91,7 +107,10 @@ const closeDeleteDialog = (confirmed) => {
     if (!modal) return;
     modal.classList.remove("is-open");
     modal.setAttribute("aria-hidden", "true");
-    if (deleteDialogLastFocus && typeof deleteDialogLastFocus.focus === "function") {
+    if (
+        deleteDialogLastFocus &&
+        typeof deleteDialogLastFocus.focus === "function"
+    ) {
         deleteDialogLastFocus.focus();
     }
     deleteDialogLastFocus = null;
@@ -101,28 +120,51 @@ const closeDeleteDialog = (confirmed) => {
     }
 };
 
-const openDeleteDialog = (title) => new Promise((resolve) => {
-    const modal = getDeleteModal();
-    const nameEl = document.getElementById("delete-chat-name");
-    if (!modal || !nameEl) {
-        resolve(false);
-        return;
-    }
-    deleteDialogLastFocus = document.activeElement;
-    nameEl.textContent = `"${title}"`;
-    modal.classList.add("is-open");
-    modal.setAttribute("aria-hidden", "false");
-    deleteDialogResolver = resolve;
-    const cancelBtn = document.getElementById("delete-chat-cancel-btn");
-    cancelBtn?.focus();
-});
+const openDeleteDialog = (title) =>
+    new Promise((resolve) => {
+        const modal = getDeleteModal();
+        const nameEl = document.getElementById("delete-chat-name");
+        if (!modal || !nameEl) {
+            resolve(false);
+            return;
+        }
+        deleteDialogLastFocus = document.activeElement;
+        nameEl.textContent = `"${title}"`;
+        modal.classList.add("is-open");
+        modal.setAttribute("aria-hidden", "false");
+        deleteDialogResolver = resolve;
+        const cancelBtn = document.getElementById("delete-chat-cancel-btn");
+        cancelBtn?.focus();
+    });
 
 const renderChatList = (index) => {
     const list = document.getElementById("chat-list");
     if (!list) return;
+
+    const searchInput = document.getElementById("chat-search");
+    const searchTerm = searchInput
+        ? searchInput.value.toLowerCase().trim()
+        : "";
+
+    const filteredIndex = searchTerm
+        ? index.filter((chat) =>
+              (chat.title || "").toLowerCase().includes(searchTerm),
+          )
+        : index;
+
     list.innerHTML = "";
+
+    if (filteredIndex.length === 0 && searchTerm) {
+        const noResults = document.createElement("div");
+        noResults.style.cssText =
+            "text-align: center; padding: 40px 20px; color: #6B7280; font-size: 0.9rem;";
+        noResults.textContent = "No chats found";
+        list.appendChild(noResults);
+        return;
+    }
+
     const active = getActiveChatId();
-    index.forEach((chat) => {
+    filteredIndex.forEach((chat) => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "chat-item" + (chat.id === active ? " is-active" : "");
@@ -181,16 +223,32 @@ const beginTitleEdit = (chatId, titleEl) => {
     if (!titleEl) return;
     const current = getChatById(chatId);
     if (!current) return;
+
+    // Find the parent button and disable it during edit
+    const parentButton = titleEl.closest("button");
+    const wasDisabled = parentButton ? parentButton.disabled : false;
+    if (parentButton) {
+        parentButton.disabled = true;
+        parentButton.style.pointerEvents = "none";
+    }
+
     const input = document.createElement("input");
     input.className = "chat-title-input";
     input.type = "text";
     input.value = current.title || "New chat";
     input.setAttribute("aria-label", "Edit chat title");
+    input.style.pointerEvents = "auto"; // Ensure input is still interactive
     titleEl.replaceWith(input);
     input.focus();
     input.setSelectionRange(0, input.value.length);
 
     const finish = async (commit) => {
+        // Re-enable the button
+        if (parentButton) {
+            parentButton.disabled = wasDisabled;
+            parentButton.style.pointerEvents = "";
+        }
+
         const nextTitle = commit
             ? input.value.trim()
             : current.title || "New chat";
@@ -211,14 +269,21 @@ const beginTitleEdit = (chatId, titleEl) => {
         renderChatList(chatIndex);
     };
 
+    // Stop all events from bubbling to parent button
+    input.addEventListener("click", (event) => {
+        event.stopPropagation();
+    });
     input.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
             event.preventDefault();
+            event.stopPropagation();
             finish(true);
         } else if (event.key === "Escape") {
             event.preventDefault();
+            event.stopPropagation();
             finish(false);
         }
+        // Don't stop propagation for other keys - let them work normally
     });
     input.addEventListener("blur", () => finish(true));
 };
@@ -248,7 +313,8 @@ const selectChat = async (chatId) => {
     setTimeout(() => {
         scrollToBottom();
     }, 100);
-    if (isMobile()) closeSidebar();
+    closeHistory();
+    closeProfile();
 };
 
 const createChat = async () => {
@@ -262,7 +328,8 @@ const createChat = async () => {
     setTimeout(() => {
         scrollToBottom();
     }, 100);
-    if (isMobile()) closeSidebar();
+    closeHistory();
+    closeProfile();
 };
 
 const confirmDelete = async (chatId, title) => {
@@ -328,27 +395,50 @@ const init = async () => {
     }
     renderChatList(chatIndex);
     if (active) await selectChat(active);
-    closeSidebar();
+    // Always hide history dropdown by default
+    closeHistory();
     // Ensure scroll to bottom after initial load
     setTimeout(() => {
         scrollToBottom();
     }, 200);
 };
 
-document.getElementById("new-chat-btn")?.addEventListener("click", () => {
-    createChat();
+// History toggle button
+document.getElementById("history-toggle-btn")?.addEventListener("click", () => {
+    toggleHistory();
 });
 
-document.getElementById("sidebar-toggle-btn")?.addEventListener("click", () => {
-    openSidebar();
+// History close button
+document.getElementById("history-close-btn")?.addEventListener("click", () => {
+    closeHistory();
 });
 
-document.getElementById("close-sidebar-btn")?.addEventListener("click", () => {
-    closeSidebar();
+// Profile toggle button
+document.getElementById("profile-toggle-btn")?.addEventListener("click", () => {
+    toggleProfile();
 });
 
+// Profile close button
+document.getElementById("profile-close-btn")?.addEventListener("click", () => {
+    closeProfile();
+});
+
+// New chat buttons
+document
+    .getElementById("new-chat-header-btn")
+    ?.addEventListener("click", () => {
+        createChat();
+    });
+
+// Search functionality
+document.getElementById("chat-search")?.addEventListener("input", () => {
+    renderChatList(chatIndex);
+});
+
+// Close dropdown when clicking backdrop
 document.getElementById("sidebar-backdrop")?.addEventListener("click", () => {
-    closeSidebar();
+    closeHistory();
+    closeProfile();
 });
 
 document.addEventListener("keydown", (event) => {
@@ -357,23 +447,30 @@ document.addEventListener("keydown", (event) => {
             closeDeleteDialog(false);
             return;
         }
-        closeSidebar();
+        closeHistory();
+        closeProfile();
     }
 });
 
-document.getElementById("delete-chat-cancel-btn")?.addEventListener("click", () => {
-    closeDeleteDialog(false);
-});
-
-document.getElementById("delete-chat-confirm-btn")?.addEventListener("click", () => {
-    closeDeleteDialog(true);
-});
-
-document.getElementById("delete-chat-modal")?.addEventListener("click", (event) => {
-    if (event.target.id === "delete-chat-modal") {
+document
+    .getElementById("delete-chat-cancel-btn")
+    ?.addEventListener("click", () => {
         closeDeleteDialog(false);
-    }
-});
+    });
+
+document
+    .getElementById("delete-chat-confirm-btn")
+    ?.addEventListener("click", () => {
+        closeDeleteDialog(true);
+    });
+
+document
+    .getElementById("delete-chat-modal")
+    ?.addEventListener("click", (event) => {
+        if (event.target.id === "delete-chat-modal") {
+            closeDeleteDialog(false);
+        }
+    });
 
 const scrollToBottom = () => {
     const scrollAnchor = document.getElementById("scroll-anchor");

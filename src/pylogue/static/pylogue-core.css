@@ -1,73 +1,108 @@
-/* Fonts for the entire application */
-*{
-  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+
+/* Satoshi Variable Font */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/static/font/Satoshi-Variable.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+* {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+}
+
+*:hover {
+  scrollbar-color: #ffffff transparent !important;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: #ffffff !important;
 }
 
 html, body {
   margin: 0;
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: 'Martel Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+  background: linear-gradient(180deg, #303b57 100%);
+  color: #9ca3af;
+  font-family: 'Satoshi', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 :root, .uk-theme-slate {
-  --background: 0 0% 98%;
-  --foreground: 222 47% 11%;
+  --background: #0c121e;
+  --foreground: 241 241 241;
 }
 
 .text-base {
-  font-size: 1rem;
+  font-size: 0.9rem !important;
   line-height: 1.5rem;
+  color: #f1f1f1;
 }
 
 .chat-panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 20px;
+  background: transparent;
 }
 
 .chat-row-user {
-  background: #dbeafe;
-  border-left: none;
-  border-radius: 20px;
-  padding: 18px 24px;
-  margin-left: auto;
-  margin-right: 20px;
-  margin-top: 40px;
-  margin-bottom: 40px;
-  max-width: 65%;
-  width: fit-content;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  color: #000000;
-  text-align: left;
+  margin: 0 20px;
+  clear: both;
+  color: #9ca3af;
+}
+
+.user-message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-left: 0;
+}
+
+.user-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  color: #3b82f6;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.user-message-content .marked {
+  flex: 1;
 }
 
 .chat-row-user p {
   margin-bottom: 6px;
   text-align: left;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 1rem;
+  color: #f1f1f1;
 }
 
 .chat-row-user .marked {
-  color: #000000;
+  color: #9ca3af;
   text-align: left;
   font-size: 1rem;
 }
 
 .chat-row-assistant {
-  background: #f8fafc;
-  margin: 40px 20px;
+  background: transparent;
+  margin: 0 20px;
   clear: both;
 }
 
+.chat-row-assistant .marked {
+  margin-left: 36px;
+}
+
 .chat-row-block {
-  padding: 14px 12px;
+  padding: 3px 7px;
   clear: both;
 }
 
@@ -75,6 +110,8 @@ html {
 .chat-row-assistant .marked:has(.tool-html) {
   display: flex;
   flex-direction: column;
+  padding-left: 0;
+  margin-left: 36px;
 }
 
 .chat-row-assistant .marked:has(.tool-html) .tool-html {
@@ -85,23 +122,33 @@ html {
   order: 1;
 }
 
+.chat-row-user .marked:has(.tool-html) {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.chat-row-user .marked:has(.tool-html) .tool-html {
+  order: 2;
+}
+
+.chat-row-user .marked:has(.tool-html) p {
+  order: 1;
+}
+
 .tool-status {
   display: block;
   width: fit-content;
-  padding: 0.3rem 0.6rem;
-  margin: 5px 0;
+  margin: 5px 0 5px 0px;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.005em;
-  background: rgba(148, 163, 184, 0.15);
-  color: #0f172a;
 }
 
 .tool-status--running {
   position: relative;
-  /* overflow: hidden; */
-  color: #0f172a;
+  color: #9CA3AF;
 }
 
 .tool-status--running::after {
@@ -110,8 +157,7 @@ html {
 }
 
 .tool-status--done {
-  background: rgba(34, 197, 94, 0.1);
-  color: #0f172a;
+  color:#9CA3AF;
 }
 
 .tool-status--done .tool-status-check {
@@ -131,6 +177,20 @@ html {
   100% { transform: translateX(100%); }
 }
 
+.assistant-loading {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(241, 241, 241, 0.35);
+  border-top-color: #f1f1f1;
+  animation: assistant-spin 0.85s linear infinite;
+}
+
+@keyframes assistant-spin {
+  to { transform: rotate(360deg); }
+}
+
 .marked a {
   color: #2563eb;
   text-decoration: underline;
@@ -147,35 +207,41 @@ html {
   border-collapse: collapse;
   margin: 16px 0;
   font-size: 0.95rem;
+  color: #f1f1f1;
+  background: rgba(12, 18, 30, 0.45);
+  border: 1px solid #3a475d;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .marked thead th {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgba(48, 59, 87, 0.8);
+  color: #f1f1f1;
   font-weight: 600;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #3a475d;
   padding: 10px 12px;
   text-align: left;
 }
 
 .marked tbody td {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #3a475d;
+  background: rgba(12, 18, 30, 0.35);
+  color: #f1f1f1;
   padding: 10px 12px;
   vertical-align: top;
 }
 
 .marked tbody tr:nth-child(odd) {
-  background: #f8fafc;
+  background: transparent;
 }
 
 .marked tbody tr:hover {
-  background: #eef2ff;
+  background: rgba(48, 59, 87, 0.5);
 }
 
 .marked blockquote {
   margin: 16px 0;
   padding: 12px 14px;
-  border-left: 3px solid #e2e8f0;
   background: #f8fafc;
   color: #475569;
   border-radius: 8px;
@@ -317,6 +383,24 @@ html {
   margin: 8px 0;
 }
 
+.marked .tool-html {
+  margin: 14px 0 14px 0;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(138, 207, 249, 0.28);
+  /* background: linear-gradient(180deg, rgba(48, 59, 87, 0.35) 0%, rgba(12, 18, 30, 0.35) 100%);
+  box-shadow:
+    0 0 0 1px rgba(118, 142, 248, 0.2) inset,
+    0 0 18px rgba(138, 207, 249, 0.22),
+    0 0 38px rgba(118, 142, 248, 0.18); */
+}
+
+.marked .tool-html iframe,
+.marked .tool-html canvas,
+.marked .tool-html svg {
+  border-radius: 10px;
+}
+
 .marked ul,
 .marked ol {
   margin: 12px 0;
@@ -376,6 +460,7 @@ html {
 }
 
 .copy-btn {
+  display: none;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   width: 24px;
@@ -399,12 +484,13 @@ html {
 }
 
 .copy-chat-btn:hover {
-  color: #1f2937;
+  color: inherit;
 }
 
 .copy-chat-btn svg {
   width: 14px;
   height: 14px;
+  color: #f1f1f1;
 }
 
 .copy-btn svg {
