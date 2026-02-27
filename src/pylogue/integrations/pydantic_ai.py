@@ -15,6 +15,7 @@ from .common import (
     resolve_tool_html as _resolve_tool_html,
     sanitize_history_answer as _sanitize_history_answer,
     should_render_tool_result_raw as _should_render_tool_result_raw,
+    start_new_status_session as _start_new_status_session,
     wrap_tool_html as _wrap_tool_html,
 )
 
@@ -194,6 +195,9 @@ class PydanticAIResponder:
     async def __call__(self, text: str, context=None):
         from pydantic_ai import messages
         from pydantic_ai.run import AgentRunResultEvent
+
+        # Start a new status session for this question
+        _start_new_status_session()
 
         pending_tool_calls = {}
         tool_call_counter = 0
