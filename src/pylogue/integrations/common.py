@@ -2,6 +2,7 @@ import html
 import json
 import re
 import ast
+import time
 from typing import Any, Optional
 
 PYLOGUE_INSTRUCTIONS = (
@@ -59,7 +60,30 @@ def safe_dom_id(value: str | None) -> str:
     return "".join(safe) or "tool-status"
 
 
+def generate_unique_status_id() -> str:
+    """Generate a unique ID for tool status based on timestamp"""
+    return f"tool-status-{int(time.time() * 1000000)}"
+
+
 TOOL_STATUS_SINGLE_ID = "tool-status-active"
+
+# Thread-local storage for session-based status ID
+_current_session_status_id = None
+
+
+def start_new_status_session():
+    """Start a new status session with a unique ID for a new question"""
+    global _current_session_status_id
+    _current_session_status_id = generate_unique_status_id()
+    return _current_session_status_id
+
+
+def get_current_status_id():
+    """Get the current session status ID, or generate one if none exists"""
+    global _current_session_status_id
+    if _current_session_status_id is None:
+        _current_session_status_id = generate_unique_status_id()
+    return _current_session_status_id
 
 
 def format_tool_result_summary(tool_name: str, args, result):
@@ -81,7 +105,8 @@ def format_tool_status_running(tool_name: str, args, call_id: str | None):
     if isinstance(args, dict):
         purpose = args.get("purpose")
     label = purpose or (tool_name.replace("_", " ").title() if tool_name else "Working")
-    status_id = TOOL_STATUS_SINGLE_ID
+    # Use session-based ID so all statuses in one question update the same element
+    status_id = get_current_status_id()
     safe_label = html.escape(str(label))
     return (
         f'<div class="tool-status-update" data-target-id="{status_id}" data-status="running">{safe_label}</div>\n'
@@ -92,7 +117,7 @@ def format_tool_status_done(args, call_id: str | None, tool_name: str | None = N
     purpose = None
     if isinstance(args, dict):
         purpose = args.get("purpose")
-    
+   
     # Use the same fallback logic as format_tool_status_running
     if purpose and isinstance(purpose, str) and purpose.strip():
         safe_label = purpose.strip()
@@ -100,8 +125,9 @@ def format_tool_status_done(args, call_id: str | None, tool_name: str | None = N
         safe_label = tool_name.replace("_", " ").title()
     else:
         safe_label = "Task"
-    
-    status_id = TOOL_STATUS_SINGLE_ID
+   
+    # Use session-based ID to update the same element as running status
+    status_id = get_current_status_id()
     safe_label_escaped = html.escape(safe_label)
     # Show process name + highlighted completion status
     return (
@@ -204,3 +230,5 @@ def load_prompt_state(prompt_state: dict, meta: dict) -> None:
         prompt_state["additional"] = list(exported_state.get("additional", []))
     elif isinstance(meta.get("system_prompt"), str):
         prompt_state["additional"] = [meta["system_prompt"]]
+
+
