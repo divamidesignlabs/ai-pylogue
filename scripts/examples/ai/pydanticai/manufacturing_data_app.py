@@ -7,7 +7,7 @@ import traceback
 from typing import Any
 
 from dotenv import load_dotenv
-# import logfire
+import logfire
 from loguru import logger
 import pandas as pd
 from pydantic_ai import Agent, RunContext
@@ -30,12 +30,12 @@ def _configure_simple_login_defaults() -> None:
 
 _configure_simple_login_defaults()
 
-# logfire.configure(
-#     environment="POC",
-#     service_name="manufacturing-data-app",
-#     api_token="pylf_v1_us_50phWZvYrWWy5Fsst9CyzT8rnrV3wl7k6jtCyVK5KyJK"
-# )
-# logfire.instrument_pydantic_ai()
+logfire.configure(
+    environment="POC",
+    service_name="manufacturing-data-app",
+    # api_token="pylf_v1_us_50phWZvYrWWy5Fsst9CyzT8rnrV3wl7k6jtCyVK5KyJK"
+)
+logfire.instrument_pydantic_ai()
 
 instructions = """
 # Manufacturing Analytics QA Agent
@@ -44,10 +44,11 @@ You are an expert manufacturing data analyst that answers C-Suite level question
 
 ## Dataset Context
 
-You are working with a manufacturing dataset (`df`) already loaded as a pandas DataFrame with these columns:
+You have TWO linked datasets, both loaded as pandas DataFrames:
 
+### `df` — IoT Sensor Data (manufacturing_6G_dataset.csv)
 - **Timestamp**: Minute-level timestamps
-- **Machine_ID**: Numeric machine identifier
+- **Machine_ID**: Numeric machine identifier (1–50)
 - **Operation_Mode**: Active, Idle, or Maintenance
 - **Temperature_C**: Machine temperature in Celsius
 - **Vibration_Hz**: Vibration frequency
@@ -60,11 +61,23 @@ You are working with a manufacturing dataset (`df`) already loaded as a pandas D
 - **Error_Rate_%**: Operational error percentage
 - **Efficiency_Status**: Low, Medium, or High
 
+### `vdf` — Visual Defect Data (defects_enriched.csv)
+- **ImageId**: Defect image filename
+- **ClassId**: Defect type (1 = Minor surface scratch, 2 = Moderate deformation, 3 = Deep crack, 4 = Critical structural)
+- **defect_date**: When the defect was detected (2024-01-01 to 2024-06-30)
+- **shift**: Morning, Afternoon, or Night
+- **operator_id**: Operator who was running the machine (OP-001 to OP-020)
+- **vendor**: Raw material supplier (Vendor_A to Vendor_E)
+- **cost_per_defect**: Estimated cost in USD (varies by defect type, vendor, and shift)
+- **Machine_ID**: Which machine produced the defect (1–50)
+
+### Link
+Both datasets share **Machine_ID** as a join key. Use this to correlate sensor readings with visual defect outcomes.
+
 ## How to Answer Questions
 
 1. **Clarify scope**: If a question is ambiguous, ask which time period, machines, or metrics to focus on.
 2. **Write concise pandas code**: Use groupby, agg, and correlation analysis. Always round results to 2 decimal places.
-   - When using `run_python`, assign the final output to `result` so it is returned to you.
 3. **Normalize when comparing**: When combining metrics on different scales, use MinMaxScaler so they're comparable.
 4. **Summarize for executives**: After every analysis, provide a plain-English insight with:
    - The key finding in one sentence
@@ -79,18 +92,21 @@ You are working with a manufacturing dataset (`df`) already loaded as a pandas D
      - Bar: category ranking/comparison
      - Histogram/box: distributions/outliers
      - Scatter: relationship/correlation between two continuous metrics
-   - In `render_chart`, chart code can directly use `df` (and alias `data`).
    - Always produce readable axes, clear titles, and sorted categories where relevant.
    - After rendering, summarize the key takeaway in plain English and recommend an action.
 
 ## Analysis Patterns
 
 - **Machine ranking**: groupby Machine_ID → agg → sort
-- **Time trends**: parse Timestamp, group by month/week/hour → plot
+- **Time trends**: parse Timestamp/defect_date, group by month/week/hour → plot
 - **Correlations**: use `.corr()` between sensor readings and outcomes
 - **Efficiency drivers**: compare metrics across Efficiency_Status groups
-- **Replacement candidates**: combine maintenance time + production speed + error rate into a composite score
+- **Replacement candidates**: combine maintenance time + production speed + error rate + defect count into a composite score
 - **ROI analysis**: compute ratios like units_per_kW or production_per_defect
+- **Cross-dataset**: merge df and vdf on Machine_ID to correlate sensor conditions with defect types and costs
+- **Vendor analysis**: group vdf by vendor to compare defect rates, types, and costs
+- **Operator analysis**: group vdf by operator_id to find who produces the most/costliest defects
+- **Shift analysis**: compare defect volume and cost across shifts, cross-reference with IoT metrics
 
 ## Guardrails
 
@@ -99,6 +115,7 @@ You are working with a manufacturing dataset (`df`) already loaded as a pandas D
 - If the user's question cannot be answered from the available columns, say so clearly.
 - Keep code under 20 lines per execution. Break complex analyses into steps.
 - Always validate assumptions (e.g. check value_counts before filtering on a category).
+- Always refer to defect types by name, not number: Class 1 = "Minor Surface Scratch", Class 2 = "Moderate Deformation", Class 3 = "Deep Crack", Class 4 = "Critical Structural". Never say "Class 1" or "ClassId 3" in reports.
 """
 
 data_dir = Path(__file__).resolve().parent
@@ -107,6 +124,11 @@ csv_path = next((data_dir / name for name in csv_candidates if (data_dir / name)
 if csv_path is None:
     raise FileNotFoundError(f"Could not find dataset in {data_dir} with names: {csv_candidates}")
 df = pd.read_csv(csv_path)
+
+defects_path = data_dir / 'defects_enriched.csv'
+if not defects_path.exists():
+    raise FileNotFoundError(f"Could not find visual defect dataset at {defects_path}")
+vdf = pd.read_csv(defects_path)
 
 
 LITELLM_API_KEY = os.getenv("LITELLM_API_KEY")
@@ -123,14 +145,15 @@ provider = OpenAIProvider(
 model = OpenAIChatModel(model_name=MODEL_NAME, provider=provider)
 
 agent = Agent(
-    model,
+    # model,
+    "google-gla:gemini-3-flash-preview",
     instructions=instructions,
 )
 deps = None
 
 @agent.tool
 def run_python(ctx: RunContext[Any], python_code: str):
-    """Execute arbitrary Python for data analysis. Available variables: `pd`, `df`.
+    """Execute arbitrary Python for data analysis. Available variables: `pd`, `df`, `vdf` (visual defect data).
     For POC only: unsafe by design and runs with full Python capabilities.
     Put final value in variable `result` to return it explicitly.
     """
@@ -141,7 +164,7 @@ def run_python(ctx: RunContext[Any], python_code: str):
         len(python_code.splitlines()),
     )
     logger.debug("run_python code start\n{}\nrun_python code end", python_code)
-    local_vars = {"pd": pd, "df": df.copy()}
+    local_vars = {"pd": pd, "df": df.copy(), "vdf": vdf.copy()}
     stdout_buffer = io.StringIO()
     try:
         with redirect_stdout(stdout_buffer):
@@ -161,7 +184,7 @@ def run_python(ctx: RunContext[Any], python_code: str):
 
 @agent.tool
 def render_chart(ctx: RunContext[Any], plotly_python_code: str):
-    """Render a Plotly chart from Python code that defines `fig` using dataset `df`."""
+    """Render a Plotly chart from Python code that defines `fig` using datasets `df` (IoT) and `vdf` (defects)."""
     _ = ctx
     logger.info(
         "render_chart executing plotly code | chars={} | lines={}",
@@ -171,7 +194,7 @@ def render_chart(ctx: RunContext[Any], plotly_python_code: str):
     logger.debug("render_chart code start\n{}\nrender_chart code end", plotly_python_code)
     try:
         return render_plotly_chart_py(
-            sql_query_runner=lambda _query: df.to_dict(orient="records"),
+            sql_query_runner=lambda _query: {"df": df.to_dict(orient="records"), "vdf": vdf.to_dict(orient="records")},
             sql_query="SELECT * FROM df",
             plotly_python=plotly_python_code,
         )
