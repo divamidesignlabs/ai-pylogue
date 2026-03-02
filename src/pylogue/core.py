@@ -297,10 +297,10 @@ def _register_simple_auth_routes(app, cfg: SimpleAuthConfig, base_path: str = ""
         return Div(
             H2("Login", cls="uk-h2"),
             Form(
-                Input(type="text", name="username", placeholder="Username", required=True, cls="uk-input mb-3"),
-                Input(type="password", name="password", placeholder="Password", required=True, cls="uk-input mb-3"),
+                Input(type="text", name="username", placeholder="Username", required=True, cls="uk-input mb-3 rounded-md border border-white"),
+                Input(type="password", name="password", placeholder="Password", required=True, cls="uk-input mb-3 rounded-md border border-white"),
                 Input(type="hidden", name="next", value=next_url),
-                Button("Sign in", type="submit", cls="uk-button uk-button-primary w-full"),
+                Button("Sign in", type="submit", cls="uk-button uk-button-primary w-full border border-white rounded-md"),
                 method="post",
                 cls="max-w-sm mx-auto mt-6",
             ),
