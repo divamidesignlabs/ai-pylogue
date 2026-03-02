@@ -7,7 +7,7 @@ import traceback
 from typing import Any
 
 from dotenv import load_dotenv
-import logfire
+# import logfire
 from loguru import logger
 import pandas as pd
 from pydantic_ai import Agent, RunContext
@@ -30,12 +30,12 @@ def _configure_simple_login_defaults() -> None:
 
 _configure_simple_login_defaults()
 
-logfire.configure(
-    environment="POC",
-    service_name="manufacturing-data-app",
-    # api_token="pylf_v1_us_50phWZvYrWWy5Fsst9CyzT8rnrV3wl7k6jtCyVK5KyJK"
-)
-logfire.instrument_pydantic_ai()
+# logfire.configure(
+#     environment="POC",
+#     service_name="manufacturing-data-app",
+#     # api_token="pylf_v1_us_50phWZvYrWWy5Fsst9CyzT8rnrV3wl7k6jtCyVK5KyJK"
+# )
+# logfire.instrument_pydantic_ai()
 
 instructions = """
 # Manufacturing Analytics QA Agent
