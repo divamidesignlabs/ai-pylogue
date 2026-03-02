@@ -63,7 +63,7 @@ You have TWO linked datasets, both loaded as pandas DataFrames:
 
 ### `vdf` — Visual Defect Data (defects_enriched.csv)
 - **ImageId**: Defect image filename
-- **ClassId**: Defect type (1 = Minor surface scratch, 2 = Moderate deformation, 3 = Deep crack, 4 = Critical structural)
+- **ClassId**: Defect type (1 = Porosity, 2 = Patches, 3 = Scratches, 4 = Inclusions)
 - **defect_date**: When the defect was detected (2024-01-01 to 2024-06-30)
 - **shift**: Morning, Afternoon, or Night
 - **operator_id**: Operator who was running the machine (OP-001 to OP-020)
@@ -115,7 +115,7 @@ Both datasets share **Machine_ID** as a join key. Use this to correlate sensor r
 - If the user's question cannot be answered from the available columns, say so clearly.
 - Keep code under 20 lines per execution. Break complex analyses into steps.
 - Always validate assumptions (e.g. check value_counts before filtering on a category).
-- Always refer to defect types by name, not number: Class 1 = "Minor Surface Scratch", Class 2 = "Moderate Deformation", Class 3 = "Deep Crack", Class 4 = "Critical Structural". Never say "Class 1" or "ClassId 3" in reports.
+- Always refer to defect types by name, not number: Class 1 = "Porosity" (Medium-High loss impact, sometimes repairable), Class 2 = "Patches" (Low loss impact, repairable), Class 3 = "Scratches" (Medium loss impact, sometimes repairable), Class 4 = "Inclusions" (Very High loss impact, rarely repairable, high structural risk). Never say "Class 1" or "ClassId 3" in reports.
 """
 
 data_dir = Path(__file__).resolve().parent
@@ -145,8 +145,8 @@ provider = OpenAIProvider(
 model = OpenAIChatModel(model_name=MODEL_NAME, provider=provider)
 
 agent = Agent(
-    # model,
-    "google-gla:gemini-3-flash-preview",
+    model,
+    # "google-gla:gemini-3-flash-preview",
     instructions=instructions,
 )
 deps = None
