@@ -213,6 +213,10 @@ def _app_factory():
             agent=agent,
             agent_deps=deps,
             show_tool_details=False,
+            tool_display_names={
+                "run_python": "Analyzing the data",
+                "render_chart": "Rendering the output",
+            },
         ),
         hero_title="Enterprise Brain for Manufacturing",
         hero_subtitle="Ask questions about manufacturing data and get responsive Plotly charts.",
