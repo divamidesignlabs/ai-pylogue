@@ -1,5 +1,6 @@
 # fasthtml solveit
 import random
+import os
 from typing import Any
 
 import logfire
@@ -10,6 +11,17 @@ from pylogue.shell import app_factory
 from pylogue.integrations.pydantic_ai import PydanticAIResponder
 
 load_dotenv(override=True)
+
+
+def _configure_simple_login_defaults() -> None:
+    # Keep the demo protected by default; callers can override via env/.env.
+    os.environ.setdefault("PYLOGUE_AUTH_REQUIRED", "true")
+    os.environ.setdefault("PYLOGUE_SIMPLE_AUTH_USERNAME", "user")
+    os.environ.setdefault("PYLOGUE_SIMPLE_AUTH_PASSWORD", "password")
+    os.environ.setdefault("PYLOGUE_SESSION_SECRET", "pylogue-dev-session-secret-change-me")
+
+
+_configure_simple_login_defaults()
 
 logfire.configure(
     environment="development",
@@ -92,7 +104,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "scripts.examples.ai.pydanticai.basic:_app_factory",
         host="0.0.0.0",
-        port=5004,
+        port=6004,
         reload=True,
         factory=True,
     )
