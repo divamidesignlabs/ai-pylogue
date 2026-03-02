@@ -438,6 +438,27 @@ const ensureMermaid = () => {
     mermaid.initialize({
         startOnLoad: false,
         suppressErrorRendering: true,
+        theme: "dark",
+        themeVariables: {
+            // Ensure dark text on all node backgrounds for readability
+            primaryColor: "#4A90E2",
+            primaryTextColor: "#000000",
+            primaryBorderColor: "#2E5C8A",
+            lineColor: "#6C757D",
+            secondaryColor: "#7ED321",
+            secondaryTextColor: "#000000",
+            secondaryBorderColor: "#5FA319",
+            tertiaryColor: "#FF6B6B",
+            tertiaryTextColor: "#000000",
+            tertiaryBorderColor: "#CC5555",
+            noteBkgColor: "#FFA500",
+            noteTextColor: "#000000",
+            noteBorderColor: "#CC8400",
+            // Additional colors for flowcharts
+            nodeBorder: "#333333",
+            mainBkg: "#5DADE2",
+            textColor: "#000000",
+        },
     });
     mermaidReady = true;
 };
