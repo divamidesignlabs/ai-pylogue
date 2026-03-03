@@ -334,6 +334,10 @@ def register_core_static(app):
     def _pylogue_markdown_js():
         return FileResponse(_CORE_STATIC_DIR / "pylogue-markdown.js")
 
+    @app.route("/favicon.svg")
+    def _favicon():
+        return FileResponse(_CORE_STATIC_DIR / "favicon.svg")
+
 class EchoResponder:
     async def __call__(self, message: str, context=None):
         user = context.get("user") if isinstance(context, dict) else None
@@ -515,6 +519,7 @@ def get_core_headers(include_markdown: bool = True):
 
     headers.append(Link(rel="stylesheet", href="/static/pylogue-core.css"))
     headers.append(Script(src="/static/pylogue-core.js", type="module"))
+    headers.append(Link(rel="icon", href="/favicon.svg", type="image/svg+xml"))
 
     return headers
 
