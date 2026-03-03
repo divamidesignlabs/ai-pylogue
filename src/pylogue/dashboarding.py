@@ -228,7 +228,7 @@ def _should_format_axis_as_numeric(traces: list, axis_key: str) -> bool:
     elif axis_key.startswith("yaxis"):
         data_key = "y"
     else:
-        return True
+        return False  # Conservative default for unknown axes
     
     # Extract axis reference from layout key
     # "xaxis" → "x", "xaxis2" → "x2", "yaxis" → "y", "yaxis3" → "y3"
@@ -238,6 +238,7 @@ def _should_format_axis_as_numeric(traces: list, axis_key: str) -> bool:
         axis_ref = axis_key.replace(f"{data_key}axis", data_key)
     
     # Check traces that use this axis
+    has_numeric_data = False
     for trace in traces:
         if not isinstance(trace, dict):
             continue
@@ -250,18 +251,24 @@ def _should_format_axis_as_numeric(traces: list, axis_key: str) -> bool:
         # Get the data
         data = trace.get(data_key)
         if isinstance(data, list) and len(data) > 0:
-            # Check first few non-null values
-            for val in data[:3]:  # Check first 3 values
-                if val is not None and not isinstance(val, dict):
-                    # If it's a string (category/date), don't format as numeric
-                    if isinstance(val, str):
-                        return False
-                    # If it's a number, format as numeric
-                    if isinstance(val, (int, float)):
-                        return True
+            # Check all non-null values to determine data type
+            for val in data:
+                if val is None or isinstance(val, dict):
+                    continue
+                # If ANY value is a string (category/date), don't format as numeric
+                if isinstance(val, str):
+                    return False
+                # Track if we found numeric data
+                if isinstance(val, (int, float)) and not math.isnan(val):
+                    has_numeric_data = True
+        
+        # Also check if data is a dict (plotly sometimes wraps data)
+        elif isinstance(data, dict):
+            # Don't format complex data structures as numeric
+            return False
     
-    # Default to numeric formatting
-    return True
+    # Only apply numeric formatting if we confirmed numeric data exists
+    return has_numeric_data
 
 
 def _force_two_decimal_axis(axis: dict):
