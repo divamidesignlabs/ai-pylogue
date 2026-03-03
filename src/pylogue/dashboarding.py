@@ -170,13 +170,26 @@ def _sanitize_hovertemplate(template: str) -> str:
     if not isinstance(template, str) or not template:
         return template
 
+    # Remove technical metadata that should not appear in tooltips
+    # marker.color in coloraxis contexts doesn't support formatting, so remove it entirely
+    text = re.sub(r"%\{marker\.color(:[^}]*)?\}", "", template)
+    
+    # Remove other technical metadata that might leak into tooltips
+    # Common patterns: trace[0], data[0], etc.
+    text = re.sub(r"%\{trace\[[^]]+\]\.[^}]+\}", "", text)
+    text = re.sub(r"%\{data\[[^]]+\]\.[^}]+\}", "", text)
+    
+    # Remove any label lines that are left with empty values after metadata removal
+    # Matches labels followed by : or = with no placeholder value before <br>, <extra>, or end
+    text = re.sub(r"(<br>|^)([^<>]+?)[:=]\s*(?=<br>|<extra>|$)", r"\1", text)
+    
     # Humanize labels before ":" in segments like "<br>field_name: %{y}"
     def _colon_label(match):
         prefix = match.group(1)
         label = match.group(2)
         return f"{prefix}{_humanize_field_name(label)}: %{{"
 
-    text = re.sub(r"(^|<br>)([^:<>{}%][^:<>{}%]*):\s*%\{", _colon_label, template)
+    text = re.sub(r"(^|<br>)([^:<>{}%][^:<>{}%]*):\s*%\{", _colon_label, text)
 
     # Humanize labels before "=" in segments like "<br>expr0=%{y}"
     def _equals_label(match):
@@ -191,7 +204,64 @@ def _sanitize_hovertemplate(template: str) -> str:
     text = re.sub(r"%\{(y|z|value)(:[^}]*)?\}", rf"%{{\1:{COMPACT_NUMBER_FORMAT}}}", text)
     # Ensure percentage placeholders use two decimals.
     text = re.sub(r"%\{percent(:[^}]*)?\}", rf"%{{percent:{PERCENT_FORMAT}}}", text)
+    
+    # Clean up any double <br> tags or trailing/leading <br> from metadata removal
+    text = re.sub(r"(<br>\s*)+", "<br>", text)
+    text = re.sub(r"^<br>|<br>$", "", text)
+    
     return text
+
+
+def _should_format_axis_as_numeric(traces: list, axis_key: str) -> bool:
+    """Determine if an axis should use numeric formatting by checking trace data.
+    
+    Args:
+        traces: List of trace dictionaries
+        axis_key: Layout axis key (e.g., "xaxis", "xaxis2", "yaxis")
+        
+    Returns:
+        True if axis should use numeric formatting, False for categorical/date axes
+    """
+    # Determine data key from axis key
+    if axis_key.startswith("xaxis"):
+        data_key = "x"
+    elif axis_key.startswith("yaxis"):
+        data_key = "y"
+    else:
+        return True
+    
+    # Extract axis reference from layout key
+    # "xaxis" → "x", "xaxis2" → "x2", "yaxis" → "y", "yaxis3" → "y3"
+    if axis_key == f"{data_key}axis":
+        axis_ref = data_key
+    else:
+        axis_ref = axis_key.replace(f"{data_key}axis", data_key)
+    
+    # Check traces that use this axis
+    for trace in traces:
+        if not isinstance(trace, dict):
+            continue
+        
+        # Check if this trace uses this axis
+        trace_axis_ref = trace.get(f"{data_key}axis", data_key)
+        if trace_axis_ref != axis_ref:
+            continue
+        
+        # Get the data
+        data = trace.get(data_key)
+        if isinstance(data, list) and len(data) > 0:
+            # Check first few non-null values
+            for val in data[:3]:  # Check first 3 values
+                if val is not None and not isinstance(val, dict):
+                    # If it's a string (category/date), don't format as numeric
+                    if isinstance(val, str):
+                        return False
+                    # If it's a number, format as numeric
+                    if isinstance(val, (int, float)):
+                        return True
+    
+    # Default to numeric formatting
+    return True
 
 
 def _force_two_decimal_axis(axis: dict):
@@ -251,18 +321,75 @@ def _improve_pie_representation(trace: dict):
     )
 
 
-def _set_default_hovertemplate(trace: dict, trace_type: str):
+def _infer_value_label(trace_name: str = "") -> str:
+    """Infer the appropriate label for tooltip values based on trace name.
+    
+    Args:
+        trace_name: The name of the trace (e.g., "Critical Defect Count", "Total Cost (USD)")
+        
+    Returns:
+        A contextually appropriate label (e.g., "Count", "Rate (%)", "Amount ($)")
+    """
+    name_lower = trace_name.lower()
+    
+    # Check for count/number indicators
+    if any(word in name_lower for word in ["count", "number", "quantity", "total defect", "defects"]):
+        return "Count"
+    
+    # Check for rate/percentage indicators
+    if any(word in name_lower for word in ["rate", "percentage", "%", " pct", "ratio"]):
+        return "Rate (%)"
+    
+    # Check for currency/cost indicators
+    if any(word in name_lower for word in ["cost", "price", "revenue", "profit", "usd", "$", "amount", "sales", "expense"]):
+        return "Amount ($)"
+    
+    # Check for volume indicators
+    if any(word in name_lower for word in ["volume", "capacity", "size"]):
+        return "Volume"
+    
+    # Check for time/duration indicators
+    if any(word in name_lower for word in ["duration", "time", "hours", "minutes", "days"]):
+        return "Duration"
+    
+    # Default fallback
+    return "Value"
+
+
+def _set_default_hovertemplate(trace: dict, trace_type: str, trace_count: int = 1):
+    """Set default hovertemplate with trace name for multi-trace charts.
+    
+    Args:
+        trace: The trace dict to modify
+        trace_type: Type of trace (bar, scatter, etc.)
+        trace_count: Total number of traces in the figure (for multi-series detection)
+    """
     if trace.get("hovertemplate"):
-        trace["hovertemplate"] = _sanitize_hovertemplate(trace["hovertemplate"])
+        # Sanitize existing hovertemplate and add trace name if needed
+        existing = _sanitize_hovertemplate(trace["hovertemplate"])
+        # Add trace name for multi-trace charts if not already present
+        if trace_count > 1 and "%{fullData.name}" not in existing and trace.get("name"):
+            # Insert trace name at the beginning
+            trace["hovertemplate"] = f"%{{fullData.name}}<br>{existing}"
+        else:
+            trace["hovertemplate"] = existing
         return
+    
+    # Infer appropriate value label from trace name
+    trace_name = trace.get("name", "")
+    value_label = _infer_value_label(trace_name)
+    
+    # Build hovertemplate with trace name for multi-trace charts
+    trace_name_prefix = "%{fullData.name}<br>" if trace_count > 1 else ""
+    
     if trace_type in {"heatmap", "contour", "histogram2d", "histogram2dcontour", "surface"}:
         trace["hovertemplate"] = (
-            f"Category: %{{x}}<br>Series: %{{y}}<br>Value: %{{z:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
+            f"{trace_name_prefix}Category: %{{x}}<br>Series: %{{y}}<br>{value_label}: %{{z:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
         )
         return
     if trace_type in {"bar", "histogram", "waterfall", "funnel", "scatter", "scatter3d", "scattergeo", "scatterpolar", "scatterternary", "box", "violin"}:
         trace["hovertemplate"] = (
-            f"Category: %{{x}}<br>Amount: %{{y:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
+            f"{trace_name_prefix}Category: %{{x}}<br>{value_label}: %{{y:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
         )
         return
 
@@ -314,7 +441,9 @@ def _apply_plotly_theme(fig_json: dict):
         axis["color"] = THEME_TEXT
         axis.setdefault("tickfont", {})
         _set_font_color(axis["tickfont"])
-        _force_two_decimal_axis(axis)
+        # Only apply numeric formatting to axes with numeric data
+        if _should_format_axis_as_numeric(traces, key):
+            _force_two_decimal_axis(axis)
         axis["automargin"] = True
         axis.setdefault("gridcolor", "rgba(58,71,93,0.45)")
         axis.setdefault("linecolor", "rgba(241,241,241,0.35)")
@@ -351,13 +480,20 @@ def _apply_plotly_theme(fig_json: dict):
             if "title" in colorbar:
                 colorbar["title"] = _set_title_color(colorbar["title"])
 
+    # Determine if we have grouped/stacked bars to avoid per-bar coloring
+    barmode = layout.get("barmode", "")
+    is_multi_trace_bar = barmode in {"group", "stack", "overlay", "relative"} or (
+        len([t for t in traces if str(t.get("type", "")).lower() in {"bar", "histogram"}]) > 1
+    )
+    trace_count = len(traces)
+    
     for idx, trace in enumerate(traces):
         if not isinstance(trace, dict):
             continue
         trace_type = str(trace.get("type", "")).lower()
         trace_color = palette[idx % len(palette)]
         _normalize_trace_labels(trace, trace_type)
-        _set_default_hovertemplate(trace, trace_type)
+        _set_default_hovertemplate(trace, trace_type, trace_count)
 
         marker = trace.get("marker")
         if not isinstance(marker, dict):
@@ -394,12 +530,14 @@ def _apply_plotly_theme(fig_json: dict):
         if trace_type in {"bar", "histogram", "waterfall", "funnel"}:
             trace.setdefault("opacity", 0.96)
             trace.setdefault("cliponaxis", False)
-            # If many bars exist in one trace, color each bar using palette.
-            x_vals = trace.get("x")
-            y_vals = trace.get("y")
-            n_points = len(x_vals) if isinstance(x_vals, list) else (len(y_vals) if isinstance(y_vals, list) else 0)
-            if n_points > 1:
-                marker["color"] = get_pylogue_color_palette(n_points)
+            # Only color individual bars when it's a single-trace chart
+            # For grouped/stacked bars, keep the trace-level color to distinguish series
+            if not is_multi_trace_bar:
+                x_vals = trace.get("x")
+                y_vals = trace.get("y")
+                n_points = len(x_vals) if isinstance(x_vals, list) else (len(y_vals) if isinstance(y_vals, list) else 0)
+                if n_points > 1:
+                    marker["color"] = get_pylogue_color_palette(n_points)
 
         # Pie-family traces need per-slice colors.
         if trace_type in {"pie", "sunburst", "treemap", "icicle", "funnelarea"}:
@@ -443,6 +581,174 @@ def _apply_plotly_theme(fig_json: dict):
                 colorbar["title"] = _set_title_color(colorbar["title"])
 
 
+def render_plotly_chart_dataframes(plotly_python: str, **dataframes):
+    """Render a Plotly chart using Python code that defines `fig` with direct DataFrame inputs.
+    
+    This function is designed for applications that work with pre-loaded DataFrames,
+    bypassing SQL query execution. Ideal for multi-dataset visualizations.
+    
+    Args:
+        plotly_python: Python code that creates a `fig` variable using plotly
+        **dataframes: Named DataFrames to pass into the execution context.
+                     Common names: df, vdf, data_df, visual_df, etc.
+    
+    The code runs with access to:
+    - All provided dataframes (e.g., df, vdf)
+    - pd (pandas module)
+    - px (plotly.express module)
+    - go (plotly.graph_objects module)
+    - make_subplots (plotly.subplots.make_subplots)
+    - get_pylogue_colors (function to get pylogue color palette)
+    - PYLOGUE_COLORS (pylogue color list)
+    
+    Returns:
+        dict with _pylogue_html_id and message, or error details
+    
+    Example:
+        render_plotly_chart_dataframes(
+            plotly_python="fig = px.bar(df, x='category', y='value')",
+            df=my_dataframe,
+            vdf=visual_dataframe
+        )
+    """
+    try:
+        if (
+            pd is None
+            or go is None
+            or px is None
+            or make_subplots is None
+            or PlotlyJSONEncoder is None
+        ):
+            return {
+                "ok": False,
+                "error": 'Missing dependencies. Install with: pip install "pylogue[dashboard]" plotly'
+            }
+
+        # Create execution environment with dataframes and pylogue utilities
+        local_scope = {
+            "pd": pd,
+            "px": px,
+            "go": go,
+            "make_subplots": make_subplots,
+            "get_pylogue_colors": get_pylogue_color_palette,
+            "PYLOGUE_COLORS": PYLOGUE_COLORS,
+        }
+        
+        # Add all provided dataframes to the execution context
+        for name, dataframe in dataframes.items():
+            if hasattr(dataframe, 'copy'):
+                local_scope[name] = dataframe.copy()
+            else:
+                local_scope[name] = dataframe
+
+        try:
+            logger.info(
+                f"Executing Plotly code with {len(dataframes)} dataframe(s): {list(dataframes.keys())}"
+            )
+            exec(plotly_python, local_scope)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception(
+                "Plotly code execution failed with dataframes: {}",
+                list(dataframes.keys()),
+            )
+            return {"ok": False, "error": f"Error executing Plotly code: {exc}"}
+
+        fig = local_scope.get("fig")
+        if fig is None or not hasattr(fig, "to_plotly_json"):
+            return {"ok": False, "error": "Plotly code must define a `fig` variable."}
+
+        try:
+            fig_json = fig.to_plotly_json()
+            _apply_plotly_theme(fig_json)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception(
+                "Plotly serialization failed: fig_type={}",
+                fig.__class__.__name__ if fig is not None else "unknown",
+            )
+            return {"ok": False, "error": f"Error serializing Plotly figure: {exc}"}
+
+        layout = fig_json.get("layout") or {}
+        user_height = layout.get("height")
+        has_explicit_height = isinstance(user_height, (int, float))
+        default_height = int(user_height) if has_explicit_height else 420
+
+        if not has_explicit_height:
+            fig_json.setdefault("layout", {})
+            fig_json["layout"]["autosize"] = True
+            fig_json["layout"].pop("width", None)
+
+        fig_payload = json.dumps(fig_json, cls=PlotlyJSONEncoder)
+        script_html = (
+            "<div id='plot-wrap' style='width:100%;max-width:100%;margin:0;'>"
+            "<div id='plot-root' style='width:100%;'></div>"
+            "</div>"
+            "<script src='https://cdn.plot.ly/plotly-2.35.2.min.js'></script>"
+            "<script>"
+            f"const fig={fig_payload};"
+            f"const explicitHeight={'true' if has_explicit_height else 'false'};"
+            f"const defaultHeight={default_height};"
+            "const gd=document.getElementById('plot-root');"
+            "function mobileHeight(){"
+            "if(explicitHeight) return defaultHeight;"
+            "const w=Math.max(280, Math.min(window.innerWidth||1024, 1400));"
+            "return Math.max(280, Math.min(560, Math.round(w*0.6)));"
+            "}"
+            "function render(){"
+            "fig.layout=fig.layout||{};"
+            "fig.layout.autosize=true;"
+            "fig.layout.width=null;"
+            "fig.layout.height=mobileHeight();"
+            "if(window.frameElement){"
+            "window.frameElement.style.height=fig.layout.height+'px';"
+            "window.frameElement.height=String(fig.layout.height);"
+            "}"
+            "Plotly.react(gd, fig.data||[], fig.layout, {responsive:true, displaylogo:false});"
+            "}"
+            "render();"
+            "const ro=new ResizeObserver(()=>{"
+            "render();"
+            "try{Plotly.Plots.resize(gd);}catch(e){}"
+            "});"
+            "ro.observe(document.body);"
+            "window.addEventListener('resize', ()=>{"
+            "render();"
+            "try{Plotly.Plots.resize(gd);}catch(e){}"
+            "});"
+            "</script>"
+        )
+
+        srcdoc = (
+            "<!doctype html><html><head><meta charset='utf-8'/>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'/>"
+            "<style>"
+            "html,body{margin:0;padding:0;background:"
+            f"{THEME_BG_GRADIENT};color:{THEME_TEXT};overflow:hidden;"
+            "}"
+            "</style>"
+            "</head><body>"
+            f"{script_html}"
+            "</body></html>"
+        )
+        escaped_srcdoc = html_lib.escape(srcdoc, quote=True)
+        iframe_html = (
+            '<iframe '
+            f'srcdoc="{escaped_srcdoc}" '
+            f'height="{default_height}" '
+            "style=\"width:100%;max-width:100%;height:"
+            f"{default_height}px;border:0;display:block;\" "
+            'title="Plotly Chart"></iframe>'
+        )
+        html_id = store_html(iframe_html)
+        return {"_pylogue_html_id": html_id, "message": "Plotly chart rendered successfully."}
+        
+    except Exception as e:
+        logger.exception(
+            "Unhandled error in render_plotly_chart_dataframes with {} dataframe(s)",
+            len(dataframes),
+        )
+        return {"ok": False, "error": f"Error in render_plotly_chart_dataframes: {e}"}
+
+
 def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_python: str):
     """Render a Plotly chart using Python code that defines `fig`.
 
@@ -454,7 +760,7 @@ def render_plotly_chart_py(sql_query_runner: callable, sql_query: str, plotly_py
     df (pandas DataFrame), pd (pandas), px (plotly.express),
     go (plotly.graph_objects), make_subplots (plotly.subplots.make_subplots).
     A list-of-dicts alias `data` is also provided for compatibility with
-    snippets that start with `pd.DataFrame(data)`.
+snippets that start with `pd.DataFrame(data)`.
 
     Plotly dropdown safety rules (prevents blank charts after selection):
     - For `updatemenus` with `method="update"`, always provide per-trace arrays:
