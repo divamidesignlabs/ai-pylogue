@@ -2,6 +2,7 @@
 from fasthtml.common import *
 from monsterui.all import Theme, Container, ContainerT, TextPresets, Button, ButtonT, FastHTML as MUFastHTML, UkIcon
 from dataclasses import dataclass
+from datetime import datetime
 from hmac import compare_digest
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -186,7 +187,11 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
         client_secret=cfg.client_secret,
         server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
         userinfo_endpoint="https://openidconnect.googleapis.com/v1/userinfo",
-        client_kwargs={"scope": "openid email profile"},
+        client_kwargs={
+            "scope": "openid email profile",
+            "access_type": "offline", 
+            "prompt": "consent",
+        },
     )
 
     base = _normalize_base_path(base_path)
@@ -219,7 +224,14 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
         next_url = request.session.get("next") or request.query_params.get("next") or default_next
         request.session["next"] = next_url
         redirect_uri = _oauth_base_url(request) + callback_path
-        return await oauth.google.authorize_redirect(request, redirect_uri)
+        
+        # Pass OAuth parameters directly to authorize_redirect instead of client_kwargs
+        return await oauth.google.authorize_redirect(
+            request, 
+            redirect_uri,
+            access_type="offline",
+            prompt="consent",
+        )
 
     @app.route(callback_path)
     async def pylogue_google_callback(request: Request):
@@ -250,12 +262,22 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
         if cfg.allowed_emails and (not email or email not in cfg.allowed_emails):
             return RedirectResponse(f"{login_path}?error=Google+account+not+allowed", status_code=303)
 
-        request.session["auth"] = {
+        auth_data = {
             "provider": "google",
             "email": email,
             "name": userinfo.get("name") if isinstance(userinfo, dict) else None,
             "picture": userinfo.get("picture") if isinstance(userinfo, dict) else None,
+            "access_token": token.get("access_token"),
+            "refresh_token": token.get("refresh_token"),
+            "scope": token.get("scope"),
+            "expires_at": datetime.fromtimestamp(token.get("expires_at")).isoformat() if token.get("expires_at") else None,
+            "token_type": token.get("token_type"),
+            "metadata": {
+                "issued_at": token.get("issued_at"),
+                "expires_in": token.get("expires_in")  # This stays as seconds
+            }
         }
+        request.session["auth"] = auth_data
         next_url = request.session.pop("next", default_next)
         return RedirectResponse(next_url, status_code=303)
 
