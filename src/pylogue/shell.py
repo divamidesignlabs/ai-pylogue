@@ -7,9 +7,17 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import inspect
 import json
+import logging
 import os
 from pathlib import Path
 from uuid import uuid4
+
+# Load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 from fasthtml.common import *
 from fastsql import Database
@@ -47,6 +55,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CHAT_APP_DIR = PROJECT_ROOT / "scripts" / "examples" / "chat_app_with_histories"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 DB_PATH = CHAT_APP_DIR / "chat_app.db"
+_LOG = logging.getLogger(__name__)
 
 
 @dataclass
@@ -55,6 +64,7 @@ class Chat:
     title: str
     created_at: str
     updated_at: str
+    user_id: str
     payload: str = ""
 
 
@@ -126,6 +136,29 @@ def app_factory(
         auth = request.session.get("auth")
         return isinstance(auth, dict)
 
+    def _get_user_id(request: Request) -> str:
+        """Get user identifier from session (email or username)."""
+        if not auth_required:
+            return "default_user"
+        auth = request.session.get("auth")
+        if isinstance(auth, dict):
+            return auth.get("email") or auth.get("username") or "unknown"
+        return "unknown"
+
+    def _get_user_role(request: Request) -> str:
+        """Get user role from session. Defaults to 'user'."""
+        if not auth_required:
+            return "user"
+        auth = request.session.get("auth")
+        if isinstance(auth, dict):
+            return auth.get("role", "user")
+        return "user"
+
+    def _is_admin(request: Request) -> bool:
+        """Check if the current user is an admin."""
+        return _get_user_role(request) == "admin"
+
+
     @app.route("/static/chat_app.css")
     def _chat_app_css():
         return FileResponse(STATIC_DIR / "chat_app.css")
@@ -138,7 +171,16 @@ def app_factory(
     def list_chats(request: Request):
         if not _is_authorized(request):
             return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+        user_id = _get_user_id(request)
+        is_admin = _is_admin(request)
+        
         items = list(local_db.create(Chat, pk="id")())
+        
+        # Filter: admins see all, users see only their own
+        if not is_admin:
+            items = [c for c in items if c.user_id == user_id]
+        
         items.sort(key=lambda c: c.updated_at or c.created_at, reverse=True)
         return JSONResponse(
             [
@@ -156,6 +198,8 @@ def app_factory(
     async def create_chat(request: Request):
         if not _is_authorized(request):
             return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+        user_id = _get_user_id(request)
         chats = local_db.create(Chat, pk="id")
         data = await request.json()
         chat_id = data.get("id") or str(uuid4())
@@ -163,7 +207,7 @@ def app_factory(
         now = _utc_iso()
         payload = data.get("payload")
         payload_str = json.dumps(payload) if payload is not None else ""
-        chat = Chat(chat_id, title, now, now, payload_str)
+        chat = Chat(chat_id, title, now, now, user_id, payload_str)
         try:
             _ = chats[chat_id]
             chats.update(chat)
@@ -182,9 +226,16 @@ def app_factory(
     def get_chat(request: Request, chat_id: str):
         if not _is_authorized(request):
             return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+        user_id = _get_user_id(request)
+        is_admin = _is_admin(request)
+        
         chats = local_db.create(Chat, pk="id")
         try:
             chat = chats[chat_id]
+            # Check ownership: user can only access their own, admin can access all
+            if not is_admin and chat.user_id != user_id:
+                return JSONResponse({"error": "Forbidden"}, status_code=403)
         except Exception:
             return JSONResponse({"cards": []})
         payload = chat.payload or ""
@@ -200,6 +251,10 @@ def app_factory(
     async def save_chat(chat_id: str, request: Request):
         if not _is_authorized(request):
             return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+        user_id = _get_user_id(request)
+        is_admin = _is_admin(request)
+        
         chats = local_db.create(Chat, pk="id")
         data = await request.json()
         payload = data.get("payload") or {"cards": []}
@@ -207,10 +262,16 @@ def app_factory(
         now = _utc_iso()
         try:
             existing = chats[chat_id]
+            # Check ownership before updating
+            if not is_admin and existing.user_id != user_id:
+                return JSONResponse({"error": "Forbidden"}, status_code=403)
             created_at = existing.created_at
+            owner_id = existing.user_id
         except Exception:
             created_at = data.get("created_at") or now
-        chat = Chat(chat_id, title, created_at, now, json.dumps(payload))
+            owner_id = user_id
+        
+        chat = Chat(chat_id, title, created_at, now, owner_id, json.dumps(payload))
         try:
             _ = chats[chat_id]
             chats.update(chat)
@@ -229,8 +290,16 @@ def app_factory(
     def delete_chat(request: Request, chat_id: str):
         if not _is_authorized(request):
             return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+        user_id = _get_user_id(request)
+        is_admin = _is_admin(request)
+        
         chats = local_db.create(Chat, pk="id")
         try:
+            chat = chats[chat_id]
+            # Check ownership before deleting
+            if not is_admin and chat.user_id != user_id:
+                return JSONResponse({"error": "Forbidden"}, status_code=403)
             chats.delete(chat_id)
         except Exception:
             pass
