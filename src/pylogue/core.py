@@ -16,6 +16,13 @@ import logging
 import os
 import re
 
+# Load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 IMPORT_PREFIX = "__PYLOGUE_IMPORT__:"
 STOP_PREFIX = "__PYLOGUE_STOP__:"
 _CORE_STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -79,6 +86,20 @@ def simple_auth_config_from_env() -> SimpleAuthConfig | None:
         auth_required=_env_bool("PYLOGUE_AUTH_REQUIRED", default=True),
         session_secret=os.getenv("PYLOGUE_SESSION_SECRET"),
     )
+
+
+def _get_admin_emails() -> set[str]:
+    """Get set of admin emails from environment variable."""
+    admin_emails = _split_csv_env(os.getenv("PYLOGUE_ADMIN_EMAILS"))
+    return set(email.lower().strip() for email in admin_emails if email)
+
+
+def _get_user_role(email: str | None) -> str:
+    """Determine user role based on email. Returns 'admin' or 'user'."""
+    if not email:
+        return "user"
+    admin_emails = _get_admin_emails()
+    return "admin" if email.lower().strip() in admin_emails else "user"
 
 
 def _normalize_base_path(base_path: str) -> str:
@@ -250,11 +271,13 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
         if cfg.allowed_emails and (not email or email not in cfg.allowed_emails):
             return RedirectResponse(f"{login_path}?error=Google+account+not+allowed", status_code=303)
 
+        user_role = _get_user_role(email)
         request.session["auth"] = {
             "provider": "google",
             "email": email,
             "name": userinfo.get("name") if isinstance(userinfo, dict) else None,
             "picture": userinfo.get("picture") if isinstance(userinfo, dict) else None,
+            "role": user_role,
         }
         next_url = request.session.pop("next", default_next)
         return RedirectResponse(next_url, status_code=303)
@@ -286,7 +309,13 @@ def _register_simple_auth_routes(app, cfg: SimpleAuthConfig, base_path: str = ""
             password = str(form.get("password") or "")
             next_url = str(form.get("next") or request.session.get("next") or default_next)
             if compare_digest(username, cfg.username) and compare_digest(password, cfg.password):
-                request.session["auth"] = {"provider": "simple", "username": cfg.username, "name": cfg.username}
+                user_role = _get_user_role(cfg.username)
+                request.session["auth"] = {
+                    "provider": "simple",
+                    "username": cfg.username,
+                    "name": cfg.username,
+                    "role": user_role,
+                }
                 request.session.pop("next", None)
                 return RedirectResponse(next_url, status_code=303)
             return RedirectResponse(f"{login_path}?error=Invalid+username+or+password", status_code=303)
