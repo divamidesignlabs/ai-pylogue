@@ -2,6 +2,7 @@
 from fasthtml.common import *
 from monsterui.all import Theme, Container, ContainerT, TextPresets, Button, ButtonT, FastHTML as MUFastHTML, UkIcon
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from hmac import compare_digest
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -365,9 +366,30 @@ def render_input():
 def render_cards(cards):
     rows = []
     data_json = json.dumps(cards)
+    
+    def format_timestamp(iso_timestamp):
+        """Format ISO timestamp to IST with date"""
+        if not iso_timestamp:
+            return ""
+        try:
+            from zoneinfo import ZoneInfo
+            dt = datetime.fromisoformat(iso_timestamp.replace('Z', '+00:00'))
+            # Convert to IST (India Standard Time)
+            ist_dt = dt.astimezone(ZoneInfo('Asia/Kolkata'))
+            # Format as "Day/MM/YYYY HH:MM AM/PM"
+            day_name = ist_dt.strftime("%a")  # Mon, Tue, etc.
+            formatted = ist_dt.strftime(f"{day_name}/%d/%m/%Y %I:%M %p")
+            return formatted
+        except:
+            return ""
+    
     for card in cards:
         card_id = card.get("id", "")
         assistant_id = f"assistant-{card_id}" if card_id else ""
+        answer_timestamp_id = f"answer-timestamp-{card_id}" if card_id else ""
+        question_ts = format_timestamp(card.get("question_timestamp"))
+        answer_ts = format_timestamp(card.get("answer_timestamp"))
+        
         rows.append(
             Div(
                 Div(
@@ -377,6 +399,11 @@ def render_cards(cards):
                         data_raw_b64=base64.b64encode(card["question"].encode("utf-8")).decode("ascii"),
                         cls="marked text-base",
                     ),
+                    Div(
+                        question_ts,
+                        cls="text-xs mt-1",
+                        style="color: #9CA3AF;",
+                    ) if question_ts else None,
                     cls="user-message-content",
                 ),
                 cls="chat-row-block chat-row-user",
@@ -400,6 +427,17 @@ def render_cards(cards):
                     id=assistant_id if assistant_id else None,
                     data_raw_b64=base64.b64encode((card["answer"] or "").encode("utf-8")).decode("ascii"),
                     cls="marked text-base text-left",
+                ),
+                Div(
+                    answer_ts,
+                    id=answer_timestamp_id if answer_timestamp_id else None,
+                    cls="text-xs mt-1",
+                    style="color: #9CA3AF;",
+                ) if answer_ts else Div(
+                    "",
+                    id=answer_timestamp_id if answer_timestamp_id else None,
+                    cls="text-xs mt-1",
+                    style="color: #9CA3AF;",
                 ),
                 cls="chat-row-block chat-row-assistant",
             )
@@ -491,6 +529,38 @@ def render_assistant_update(card):
         id=assistant_id if assistant_id else None,
         data_raw_b64=base64.b64encode((card.get("answer", "") or "").encode("utf-8")).decode("ascii"),
         cls="marked text-base text-left",
+        hx_swap_oob="true",
+    )
+
+
+def render_answer_timestamp_update(card):
+    """Render timestamp update for when answer is complete"""
+    card_id = card.get("id", "")
+    answer_timestamp_id = f"answer-timestamp-{card_id}" if card_id else ""
+    
+    def format_timestamp(iso_timestamp):
+        """Format ISO timestamp to IST with date"""
+        if not iso_timestamp:
+            return ""
+        try:
+            from zoneinfo import ZoneInfo
+            dt = datetime.fromisoformat(iso_timestamp.replace('Z', '+00:00'))
+            # Convert to IST (India Standard Time)
+            ist_dt = dt.astimezone(ZoneInfo('Asia/Kolkata'))
+            # Format as "Day/MM/YYYY HH:MM AM/PM"
+            day_name = ist_dt.strftime("%a")  # Mon, Tue, etc.
+            formatted = ist_dt.strftime(f"{day_name}/%d/%m/%Y %I:%M %p")
+            return formatted
+        except:
+            return ""
+    
+    answer_ts = format_timestamp(card.get("answer_timestamp"))
+    
+    return Div(
+        answer_ts,
+        id=answer_timestamp_id if answer_timestamp_id else None,
+        cls="text-xs mt-1",
+        style="color: #9CA3AF;",
         hx_swap_oob="true",
     )
 
@@ -599,7 +669,14 @@ def register_ws_routes(
                     pass
 
         async def _run_message(prompt: str):
-            cards.append({"id": str(len(cards)), "question": prompt, "answer": ""})
+            question_time = datetime.now(timezone.utc)
+            cards.append({
+                "id": str(len(cards)), 
+                "question": prompt, 
+                "answer": "",
+                "question_timestamp": question_time.isoformat(),
+                "answer_timestamp": None
+            })
             await send(render_cards(cards))
             try:
                 result = _invoke_responder(
@@ -611,18 +688,26 @@ def register_ws_routes(
                     async for chunk in result:
                         cards[-1]["answer"] += str(chunk)
                         await send(render_assistant_update(cards[-1]))
+                    # Answer complete - add timestamp
+                    cards[-1]["answer_timestamp"] = datetime.now(timezone.utc).isoformat()
+                    await send(render_answer_timestamp_update(cards[-1]))
                 else:
                     if inspect.isawaitable(result):
                         result = await result
                     for ch in str(result):
                         cards[-1]["answer"] += ch
                         await send(render_assistant_update(cards[-1]))
+                    # Answer complete - add timestamp
+                    cards[-1]["answer_timestamp"] = datetime.now(timezone.utc).isoformat()
+                    await send(render_answer_timestamp_update(cards[-1]))
             except asyncio.CancelledError:
                 if cards and cards[-1].get("answer"):
                     cards[-1]["answer"] += "\n\n[Stopped]"
                 else:
                     cards[-1]["answer"] = "[Stopped]"
+                cards[-1]["answer_timestamp"] = datetime.now(timezone.utc).isoformat()
                 await send(render_assistant_update(cards[-1]))
+                await send(render_answer_timestamp_update(cards[-1]))
             finally:
                 await send(render_chat_data(cards))
                 await send(render_chat_export(cards, responder=session_responder))
@@ -676,6 +761,8 @@ def register_ws_routes(
                                 "question": str(question),
                                 "answer": str(answer),
                                 "answer_text": str(answer_text) if answer_text is not None else None,
+                                "question_timestamp": item.get("question_timestamp"),
+                                "answer_timestamp": item.get("answer_timestamp"),
                             }
                         )
             session["cards"] = normalized
