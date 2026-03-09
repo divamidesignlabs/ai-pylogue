@@ -864,6 +864,7 @@ def main(
     google_oauth_config: GoogleOAuthConfig | None = None,
     simple_auth_config: SimpleAuthConfig | None = None,
     auth_required: bool | None = None,
+    base_path: str = "",
 ):
     if responder is None:
         responder = EchoResponder()
@@ -892,7 +893,7 @@ def main(
         title=title,
         subtitle=subtitle,
         tag_line_href=tag_line_href,
-        base_path="",
+        base_path=base_path,
         google_oauth_config=oauth_cfg,
         simple_auth_config=simple_cfg,
         auth_required=auth_required,
