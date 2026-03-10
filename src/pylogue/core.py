@@ -515,11 +515,11 @@ def get_core_headers(include_markdown: bool = True):
         headers.append(
             Script(src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js")
         )
-        headers.append(Script(src="/static/pylogue-markdown.js", type="module"))
+        headers.append(Script(src="./static/pylogue-markdown.js", type="module"))
 
-    headers.append(Link(rel="stylesheet", href="/static/pylogue-core.css"))
-    headers.append(Script(src="/static/pylogue-core.js", type="module"))
-    headers.append(Link(rel="icon", href="/favicon.svg", type="image/svg+xml"))
+    headers.append(Link(rel="stylesheet", href="./static/pylogue-core.css"))
+    headers.append(Script(src="./static/pylogue-core.js", type="module"))
+    headers.append(Link(rel="icon", href="./favicon.svg", type="image/svg+xml"))
 
     return headers
 
@@ -770,6 +770,10 @@ def register_routes(
             request.session["next"] = chat_path
             login_path = auth_paths["login_path"] if auth_paths else "/login"
             return RedirectResponse(f"{login_path}?next={quote_plus(chat_path)}", status_code=303)
+        # Use ASGI root_path so ws_connect is correct whether running standalone
+        # or mounted under a prefix via FastAPI/Starlette app.mount().
+        scope_root = request.scope.get("root_path", "").rstrip("/")
+        effective_ws_path = f"{scope_root}/ws" if scope_root else ws_path
 
         tag_line_node = (
             A(
@@ -837,7 +841,7 @@ def register_routes(
                                 ),
                                 id="form",
                                 hx_ext="ws",
-                                ws_connect=ws_path,
+                                ws_connect=effective_ws_path,
                                 ws_send=True,
                                 hx_target="#cards",
                                 hx_swap="outerHTML",

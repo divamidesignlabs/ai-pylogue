@@ -89,8 +89,8 @@ def app_factory(
                 rel="stylesheet",
                 href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@300;400;500;600;700&display=swap",
             ),
-            Link(rel="stylesheet", href="/static/chat_app.css"),
-            Script(src="/static/chat_app.js", type="module"),
+            Link(rel="stylesheet", href="./static/chat_app.css"),
+            Script(src="./static/chat_app.js", type="module"),
         ]
     )
 
@@ -332,7 +332,12 @@ def app_factory(
             cls="chat-content-wrapper",
         )
 
-    def _chat_input():
+    def _chat_input(request: Request = None):
+        ws_path = "/ws"
+        if request is not None:
+            scope_root = request.scope.get("root_path", "").rstrip("/")
+            if scope_root:
+                ws_path = f"{scope_root}/ws"
         return Div(
             Form(
                 render_input(),
@@ -342,7 +347,7 @@ def app_factory(
                 ),
                 id="form",
                 hx_ext="ws",
-                ws_connect="/ws",
+                ws_connect=ws_path,
                 ws_send=True,
                 hx_target="#cards",
                 hx_swap="outerHTML",
@@ -351,11 +356,11 @@ def app_factory(
             cls="chat-input-area",
         )
 
-    def _main_panel(user_info=None):
+    def _main_panel(user_info=None, request: Request = None):
         return Div(
             _hero(user_info),
             _chat_content(),
-            _chat_input(),
+            _chat_input(request),
             cls="main-panel",
         )
 
@@ -457,12 +462,12 @@ def app_factory(
             cls="profile-dropdown",
         )
 
-    def _shell(user_info=None):
+    def _shell(user_info=None, request: Request = None):
         return Div(
             Div(id="sidebar-backdrop", cls="sidebar-backdrop"),
             _history_dropdown(),
             _profile_dropdown(user_info) if auth_required else None,
-            _main_panel(user_info),
+            _main_panel(user_info, request),
             _delete_chat_modal(),
             cls="app-shell",
         )
@@ -480,7 +485,7 @@ def app_factory(
             Title(hero_title),
             Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
             Body(
-                _shell(user_info),
+                _shell(user_info, request),
                 cls="min-h-screen",
                 data_import_prefix=IMPORT_PREFIX,
             ),
