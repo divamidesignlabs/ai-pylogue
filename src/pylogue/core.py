@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import quote_plus
 from starlette.requests import Request
 from starlette.responses import FileResponse, RedirectResponse
+from starlette.staticfiles import StaticFiles
 import asyncio
 import inspect
 import json
@@ -322,17 +323,8 @@ def register_core_static(app):
         return
     app._pylogue_static_registered = True
 
-    @app.route("/static/pylogue-core.css")
-    def _pylogue_core_css():
-        return FileResponse(_CORE_STATIC_DIR / "pylogue-core.css")
-
-    @app.route("/static/pylogue-core.js")
-    def _pylogue_core_js():
-        return FileResponse(_CORE_STATIC_DIR / "pylogue-core.js")
-
-    @app.route("/static/pylogue-markdown.js")
-    def _pylogue_markdown_js():
-        return FileResponse(_CORE_STATIC_DIR / "pylogue-markdown.js")
+    # Serve entire static dir (including font/ subdirectory) at /static/
+    app.mount("/static", StaticFiles(directory=_CORE_STATIC_DIR), name="pylogue_static")
 
     @app.route("/favicon.svg")
     def _favicon():

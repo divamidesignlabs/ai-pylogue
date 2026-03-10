@@ -1,5 +1,6 @@
 const IMPORT_PREFIX =
     document.body?.dataset.importPrefix || "__PYLOGUE_IMPORT__:";
+const API_BASE = document.body?.dataset.apiBase || "";
 if (document.body) {
     document.body.dataset.disableCoreDownload = "true";
 }
@@ -23,11 +24,11 @@ const PENCIL_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 const api = {
     async listChats() {
-        const res = await fetch("/api/chats");
+        const res = await fetch(`${API_BASE}/api/chats`);
         return res.ok ? res.json() : [];
     },
     async createChat() {
-        const res = await fetch("/api/chats", {
+        const res = await fetch(`${API_BASE}/api/chats`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ title: "New chat" }),
@@ -35,11 +36,11 @@ const api = {
         return res.ok ? res.json() : null;
     },
     async getChat(chatId) {
-        const res = await fetch(`/api/chats/${chatId}`);
+        const res = await fetch(`${API_BASE}/api/chats/${chatId}`);
         return res.ok ? res.json() : { cards: [] };
     },
     async saveChat(chatId, payload, title) {
-        const res = await fetch(`/api/chats/${chatId}`, {
+        const res = await fetch(`${API_BASE}/api/chats/${chatId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ payload, title }),
@@ -47,7 +48,7 @@ const api = {
         return res.ok ? res.json() : null;
     },
     async deleteChat(chatId) {
-        const res = await fetch(`/api/chats/${chatId}`, { method: "DELETE" });
+        const res = await fetch(`${API_BASE}/api/chats/${chatId}`, { method: "DELETE" });
         return res.ok;
     },
 };
