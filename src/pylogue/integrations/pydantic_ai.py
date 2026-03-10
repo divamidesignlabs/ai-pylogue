@@ -11,6 +11,7 @@ from .common import (
     format_tool_status_done as _format_tool_status_done,
     format_tool_status_running as _format_tool_status_running,
     get_export_state as _get_export_state_common,
+    get_tool_display_info as _get_tool_display_info,
     load_prompt_state as _load_prompt_state_common,
     resolve_tool_html as _resolve_tool_html,
     sanitize_history_answer as _sanitize_history_answer,
@@ -230,8 +231,7 @@ class PydanticAIResponder:
                 call_id = _get_tool_call_id(part) or f"tool-{tool_call_counter}"
                 pending_tool_calls[call_id] = (part.tool_name, part.args)
                 if not self.show_tool_details:
-                    display_name = self.tool_display_names.get(part.tool_name, part.tool_name)
-                    yield _format_tool_status_running(display_name, part.args, call_id)
+                    yield _format_tool_status_running(part.tool_name, part.args, call_id, self.tool_display_names)
                 await asyncio.sleep(0)
                 continue
 
@@ -241,8 +241,7 @@ class PydanticAIResponder:
                 call_id = _get_tool_call_id(part) or f"tool-{tool_call_counter}"
                 pending_tool_calls[call_id] = (part.tool_name, part.args)
                 if not self.show_tool_details:
-                    display_name = self.tool_display_names.get(part.tool_name, part.tool_name)
-                    yield _format_tool_status_running(display_name, part.args, call_id)
+                    yield _format_tool_status_running(part.tool_name, part.args, call_id, self.tool_display_names)
                 await asyncio.sleep(0)
                 continue
 
@@ -262,15 +261,13 @@ class PydanticAIResponder:
                 if tool_name or args or result:
                     resolved_html = _resolve_tool_html(result)
                     if not self.show_tool_details:
-                        display_name = self.tool_display_names.get(tool_name, tool_name)
-                        yield _format_tool_status_done(args, call_id, display_name)
+                        yield _format_tool_status_done(args, call_id, tool_name, self.tool_display_names)
                     if resolved_html:
                         yield _wrap_tool_html(resolved_html)
                     elif _should_render_tool_result_raw(tool_name, result):
                         yield _wrap_tool_html(result)
                     elif self.show_tool_details:
-                        display_name = self.tool_display_names.get(tool_name, tool_name)
-                        yield _format_tool_result_summary(display_name, args, result)
+                        yield _format_tool_result_summary(tool_name, args, result)
                 await asyncio.sleep(0)
                 continue
 

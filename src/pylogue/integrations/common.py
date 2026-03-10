@@ -86,6 +86,35 @@ def get_current_status_id():
     return _current_session_status_id
 
 
+def get_tool_display_info(tool_name: str, tool_display_names: dict | None) -> tuple[str, str | None]:
+    """
+    Extract display name and purpose from tool_display_names.
+    
+    Supports both formats:
+    - Simple string: {"tool_name": "Display Name"}
+    - Detailed dict: {"tool_name": {"name": "Display Name", "purpose": "Description"}}
+    
+    Returns:
+        tuple: (display_name, purpose)
+    """
+    if not tool_display_names or tool_name not in tool_display_names:
+        return tool_name, None
+    
+    display_config = tool_display_names[tool_name]
+    
+    # Simple string format
+    if isinstance(display_config, str):
+        return display_config, None
+    
+    # Detailed dict format
+    if isinstance(display_config, dict):
+        name = display_config.get("name", tool_name)
+        purpose = display_config.get("purpose")
+        return name, purpose
+    
+    return tool_name, None
+
+
 def format_tool_result_summary(tool_name: str, args, result):
     tool_label = html.escape(tool_name or "tool")
     safe_args = html.escape(safe_json(args))
@@ -100,11 +129,25 @@ def format_tool_result_summary(tool_name: str, args, result):
     )
 
 
-def format_tool_status_running(tool_name: str, args, call_id: str | None):
-    purpose = None
+def format_tool_status_running(tool_name: str, args, call_id: str | None, tool_display_names: dict | None = None):
+    # First, try to get purpose from args
+    purpose_from_args = None
     if isinstance(args, dict):
-        purpose = args.get("purpose")
-    label = purpose or (tool_name.replace("_", " ").title() if tool_name else "Working")
+        purpose_from_args = args.get("purpose")
+    
+    # Get display info from tool_display_names
+    display_name, purpose_from_config = get_tool_display_info(tool_name, tool_display_names)
+    
+    # Priority: purpose from config > purpose from args > display name > formatted tool name
+    if purpose_from_config:
+        label = purpose_from_config
+    elif purpose_from_args:
+        label = purpose_from_args
+    elif display_name:
+        label = display_name
+    else:
+        label = tool_name.replace("_", " ").title() if tool_name else "Working"
+    
     # Use session-based ID so all statuses in one question update the same element
     status_id = get_current_status_id()
     safe_label = html.escape(str(label))
@@ -113,14 +156,22 @@ def format_tool_status_running(tool_name: str, args, call_id: str | None):
     )
 
 
-def format_tool_status_done(args, call_id: str | None, tool_name: str | None = None):
-    purpose = None
+def format_tool_status_done(args, call_id: str | None, tool_name: str | None = None, tool_display_names: dict | None = None):
+    # First, try to get purpose from args
+    purpose_from_args = None
     if isinstance(args, dict):
-        purpose = args.get("purpose")
-   
-    # Use the same fallback logic as format_tool_status_running
-    if purpose and isinstance(purpose, str) and purpose.strip():
-        safe_label = purpose.strip()
+        purpose_from_args = args.get("purpose")
+    
+    # Get display info from tool_display_names
+    display_name, purpose_from_config = get_tool_display_info(tool_name, tool_display_names)
+    
+    # Priority: purpose from config > purpose from args > display name > formatted tool name
+    if purpose_from_config and isinstance(purpose_from_config, str) and purpose_from_config.strip():
+        safe_label = purpose_from_config.strip()
+    elif purpose_from_args and isinstance(purpose_from_args, str) and purpose_from_args.strip():
+        safe_label = purpose_from_args.strip()
+    elif display_name:
+        safe_label = display_name
     elif tool_name:
         safe_label = tool_name.replace("_", " ").title()
     else:

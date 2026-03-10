@@ -12,6 +12,7 @@ from .common import (
     format_tool_status_done as _format_tool_status_done,
     format_tool_status_running as _format_tool_status_running,
     get_export_state as _get_export_state_common,
+    get_tool_display_info as _get_tool_display_info,
     load_prompt_state as _load_prompt_state_common,
     resolve_tool_html as _resolve_tool_html,
     sanitize_history_answer as _sanitize_history_answer,
@@ -208,6 +209,7 @@ class AgnoResponder:
         self,
         agent: Any,
         show_tool_details: bool = True,
+        tool_display_names: Optional[dict[str, str | dict]] = None,
         run_kwargs: Optional[dict[str, Any]] = None,
     ):
         self.agent = agent
@@ -230,6 +232,7 @@ class AgnoResponder:
         self._prompt_state = state
         self.message_history = []
         self.show_tool_details = show_tool_details
+        self.tool_display_names = tool_display_names or {}
         self._active_user = None
         self.run_kwargs = copy.deepcopy(run_kwargs) if isinstance(run_kwargs, dict) else {}
 
@@ -336,7 +339,7 @@ class AgnoResponder:
                     resolved_call_id = call_id or f"tool-{tool_call_counter}"
                     pending_tool_calls[resolved_call_id] = (tool_name, args)
                     if not self.show_tool_details:
-                        yield _format_tool_status_running(tool_name, args, resolved_call_id)
+                        yield _format_tool_status_running(tool_name, args, resolved_call_id, self.tool_display_names)
                 continue
 
             if _is_event(event, "ToolCallCompleted"):
@@ -347,7 +350,7 @@ class AgnoResponder:
                     if self.show_tool_details and (tool_name or args or result):
                         yield _format_tool_result_summary(tool_name, args, result)
                     if not self.show_tool_details:
-                        yield _format_tool_status_done(args, resolved_call_id, tool_name)
+                        yield _format_tool_status_done(args, resolved_call_id, tool_name, self.tool_display_names)
                     resolved_html = _resolve_tool_html(result)
                     if resolved_html:
                         yield _wrap_tool_html(resolved_html)

@@ -214,8 +214,14 @@ def _app_factory():
             agent_deps=deps,
             show_tool_details=False,
             tool_display_names={
-                "run_python": "Analyzing the data",
-                "render_chart": "Rendering the output",
+                "run_python": {
+                    "name": "Data Analyzer",
+                    "purpose": "Analyzing manufacturing data"
+                },
+                "render_chart": {
+                    "name": "Chart Generator",
+                    "purpose": "Rendering interactive visualization"
+                },
             },
         ),
         hero_title="Enterprise Brain for Manufacturing",
