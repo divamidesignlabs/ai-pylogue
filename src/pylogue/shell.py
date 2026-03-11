@@ -71,6 +71,7 @@ def app_factory(
         "One UI wraps multiple Pylogue chat sessions. Pick a chat on the left, "
         "start a new one, or return to previous conversations instantly."
     ),
+    static_prefix: str = "./static",
 ) -> MUFastHTML:
     if db_path is None:
         caller_frame = inspect.stack()[1]
@@ -82,15 +83,15 @@ def app_factory(
     local_db = Database(f"sqlite:///{resolved_db_path}")
     if responder_factory is None:
         responder = responder or EchoResponder()
-    headers = list(get_core_headers(include_markdown=True))
+    headers = list(get_core_headers(include_markdown=True, static_prefix=static_prefix))
     headers.extend(
         [
             Link(
                 rel="stylesheet",
                 href="https://fonts.googleapis.com/css2?family=Martel+Sans:wght@300;400;500;600;700&display=swap",
             ),
-            Link(rel="stylesheet", href="./static/chat_app.css"),
-            Script(src="./static/chat_app.js", type="module"),
+            Link(rel="stylesheet", href=f"{static_prefix}/chat_app.css"),
+            Script(src=f"{static_prefix}/chat_app.js", type="module"),
         ]
     )
 
@@ -391,7 +392,7 @@ def app_factory(
             tabindex="-1",
         )
     
-    def _profile_dropdown(user_info):
+    def _profile_dropdown(user_info, request: Request = None):
         user_name = user_info.get("name", "User") if user_info else "User"
         return Div(
             Div(
@@ -438,7 +439,7 @@ def app_factory(
                         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>'
                     ),
                     Span("Logout"),
-                    href=auth_paths["logout_path"] if auth_paths else "/logout",
+                    href=(request.scope.get("root_path", "").rstrip("/") + auth_paths["logout_path"]) if (auth_paths and request) else "/logout",
                     cls="profile-menu-btn profile-logout-btn",
                     aria_label="Logout",
                     title="Logout",
@@ -458,7 +459,7 @@ def app_factory(
         return Div(
             Div(id="sidebar-backdrop", cls="sidebar-backdrop"),
             _history_dropdown(),
-            _profile_dropdown(user_info) if auth_required else None,
+            _profile_dropdown(user_info, request) if auth_required else None,
             _main_panel(user_info, request),
             _delete_chat_modal(),
             cls="app-shell",
@@ -468,14 +469,16 @@ def app_factory(
     def home(request: Request):
         user_info = None
         if auth_required and not _is_authorized(request):
-            request.session["next"] = "/"
-            login_path = auth_paths["login_path"] if auth_paths else "/login"
-            return RedirectResponse(login_path, status_code=303)
+            root = request.scope.get("root_path", "").rstrip("/")
+            _default_login = auth_paths["login_path"] if auth_paths else "/login"
+            request.session["next"] = root + "/"
+            return RedirectResponse(root + _default_login, status_code=303)
         if auth_required:
             user_info = request.session.get("auth")
         return (
             Title(hero_title),
             Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
+            Meta(http_equiv="Cache-Control", content="no-store"),
             Body(
                 _shell(user_info, request),
                 cls="min-h-screen",

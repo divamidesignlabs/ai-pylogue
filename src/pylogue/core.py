@@ -199,12 +199,13 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
 
     @app.route(login_path, methods=["GET"])
     async def pylogue_google_login(request: Request):
+        root = request.scope.get("root_path", "").rstrip("/")
         error = request.query_params.get("error")
         return Div(
             H2("Login", cls="uk-h2"),
             A(
                 Span("Continue with Google", cls="text-sm font-semibold"),
-                href=login_google_path,
+                href=root + login_google_path,
                 cls=(
                     "inline-flex items-center justify-center px-4 py-2 my-6 rounded-md "
                     "border border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-900 "
@@ -217,13 +218,16 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
 
     @app.route(login_google_path)
     async def pylogue_google_login_redirect(request: Request):
-        next_url = request.session.get("next") or request.query_params.get("next") or default_next
+        root = request.scope.get("root_path", "").rstrip("/")
+        _default = f"{root}/" if root else default_next
+        next_url = request.session.get("next") or request.query_params.get("next") or _default
         request.session["next"] = next_url
-        redirect_uri = _oauth_base_url(request) + callback_path
+        redirect_uri = _oauth_base_url(request) + root + callback_path
         return await oauth.google.authorize_redirect(request, redirect_uri)
 
     @app.route(callback_path)
     async def pylogue_google_callback(request: Request):
+        root = request.scope.get("root_path", "").rstrip("/")
         try:
             token = await oauth.google.authorize_access_token(request)
             userinfo = token.get("userinfo")
@@ -237,19 +241,19 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
         except Exception as exc:
             _LOG.exception("Google OAuth callback failed: %s", exc)
             err = quote_plus(f"Google authentication failed ({type(exc).__name__})")
-            return RedirectResponse(f"{login_path}?error={err}", status_code=303)
+            return RedirectResponse(f"{root}{login_path}?error={err}", status_code=303)
 
         email = userinfo.get("email") if isinstance(userinfo, dict) else None
         if not email:
-            return RedirectResponse(f"{login_path}?error=Google+authentication+failed+(no+email)", status_code=303)
+            return RedirectResponse(f"{root}{login_path}?error=Google+authentication+failed+(no+email)", status_code=303)
         if cfg.allowed_domains:
             if not email:
-                return RedirectResponse(f"{login_path}?error=Google+account+not+allowed", status_code=303)
+                return RedirectResponse(f"{root}{login_path}?error=Google+account+not+allowed", status_code=303)
             domain = email.split("@")[-1]
             if domain not in cfg.allowed_domains:
-                return RedirectResponse(f"{login_path}?error=Google+account+not+allowed", status_code=303)
+                return RedirectResponse(f"{root}{login_path}?error=Google+account+not+allowed", status_code=303)
         if cfg.allowed_emails and (not email or email not in cfg.allowed_emails):
-            return RedirectResponse(f"{login_path}?error=Google+account+not+allowed", status_code=303)
+            return RedirectResponse(f"{root}{login_path}?error=Google+account+not+allowed", status_code=303)
 
         request.session["auth"] = {
             "provider": "google",
@@ -257,14 +261,16 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
             "name": userinfo.get("name") if isinstance(userinfo, dict) else None,
             "picture": userinfo.get("picture") if isinstance(userinfo, dict) else None,
         }
-        next_url = request.session.pop("next", default_next)
+        _default = f"{root}/" if root else default_next
+        next_url = request.session.pop("next", None) or _default
         return RedirectResponse(next_url, status_code=303)
 
     @app.route(logout_path)
     async def pylogue_google_logout(request: Request):
+        root = request.scope.get("root_path", "").rstrip("/")
         request.session.pop("auth", None)
         request.session.pop("next", None)
-        return RedirectResponse(login_path, status_code=303)
+        return RedirectResponse(root + login_path, status_code=303)
 
     return {
         "login_path": login_path,
@@ -281,6 +287,7 @@ def _register_simple_auth_routes(app, cfg: SimpleAuthConfig, base_path: str = ""
 
     @app.route(login_path, methods=["GET", "POST"])
     async def pylogue_simple_login(request: Request):
+        root = request.scope.get("root_path", "").rstrip("/")
         if request.method == "POST":
             form = await request.form()
             username = str(form.get("username") or "")
@@ -290,7 +297,7 @@ def _register_simple_auth_routes(app, cfg: SimpleAuthConfig, base_path: str = ""
                 request.session["auth"] = {"provider": "simple", "username": cfg.username, "name": cfg.username}
                 request.session.pop("next", None)
                 return RedirectResponse(next_url, status_code=303)
-            return RedirectResponse(f"{login_path}?error=Invalid+username+or+password", status_code=303)
+            return RedirectResponse(f"{root}{login_path}?error=Invalid+username+or+password", status_code=303)
 
         next_url = request.query_params.get("next") or request.session.get("next") or default_next
         request.session["next"] = next_url
@@ -311,9 +318,10 @@ def _register_simple_auth_routes(app, cfg: SimpleAuthConfig, base_path: str = ""
 
     @app.route(logout_path)
     async def pylogue_simple_logout(request: Request):
+        root = request.scope.get("root_path", "").rstrip("/")
         request.session.pop("auth", None)
         request.session.pop("next", None)
-        return RedirectResponse(login_path, status_code=303)
+        return RedirectResponse(root + login_path, status_code=303)
 
     return {"login_path": login_path, "logout_path": logout_path, "default_next": default_next}
 
@@ -487,7 +495,7 @@ def render_assistant_update(card):
     )
 
 
-def get_core_headers(include_markdown: bool = True):
+def get_core_headers(include_markdown: bool = True, static_prefix: str = "./static"):
     headers = list(Theme.slate.headers())
     if include_markdown:
         headers.extend(
@@ -507,10 +515,10 @@ def get_core_headers(include_markdown: bool = True):
         headers.append(
             Script(src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js")
         )
-        headers.append(Script(src="./static/pylogue-markdown.js", type="module"))
+        headers.append(Script(src=f"{static_prefix}/pylogue-markdown.js", type="module"))
 
-    headers.append(Link(rel="stylesheet", href="./static/pylogue-core.css"))
-    headers.append(Script(src="./static/pylogue-core.js", type="module"))
+    headers.append(Link(rel="stylesheet", href=f"{static_prefix}/pylogue-core.css"))
+    headers.append(Script(src=f"{static_prefix}/pylogue-core.js", type="module"))
     headers.append(Link(rel="icon", href="./favicon.svg", type="image/svg+xml"))
 
     return headers
@@ -760,8 +768,9 @@ def register_routes(
         auth = _request_auth(request)
         if auth_required and not auth:
             request.session["next"] = chat_path
+            root = request.scope.get("root_path", "").rstrip("/")
             login_path = auth_paths["login_path"] if auth_paths else "/login"
-            return RedirectResponse(f"{login_path}?next={quote_plus(chat_path)}", status_code=303)
+            return RedirectResponse(f"{root}{login_path}?next={quote_plus(chat_path)}", status_code=303)
         # Use ASGI root_path so ws_connect is correct whether running standalone
         # or mounted under a prefix via FastAPI/Starlette app.mount().
         scope_root = request.scope.get("root_path", "").rstrip("/")
@@ -777,7 +786,8 @@ def register_routes(
             else P(tag_line, cls="text-xs uppercase tracking-widest text-slate-500")
         )
         user_email = auth.get("email") if isinstance(auth, dict) else None
-        logout_href = auth_paths["logout_path"] if auth_paths else "/logout"
+        _raw_logout = auth_paths["logout_path"] if auth_paths else "/logout"
+        logout_href = scope_root + _raw_logout
         auth_bar = (
             Div(
                 P(user_email or "Signed in", cls="text-xs text-slate-500"),
