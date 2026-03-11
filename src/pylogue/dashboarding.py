@@ -783,10 +783,39 @@ snippets that start with `pd.DataFrame(data)`.
     - Pylogue auto-normalizes dropdown payloads for common update mistakes,
       so all agents get safer behavior by default.
     - Optional cross-trace click interaction contract (tool-level, agent-agnostic):
-      put `layout.meta.pylogue_linked_interaction` with:
+      put `layout.meta.pylogue_linked_interaction` with one of these formats:
+      
+      SINGLE INTERACTION (backward compatible):
       `source_trace` (int), `target_trace` (int), `lookup` (dict),
       and optional `season_menu_index` (int), `default_season` (str),
       `target_title_annotation_index` (int).
+      
+      MULTIPLE INTERACTIONS (for bidirectional or multi-graph interactions):
+      `interactions` (list) containing objects with:
+      `source_trace` (int), `target_trace` (int), `lookup` (dict),
+      and optional `season_menu_index` (int), `default_season` (str),
+      `target_title_annotation_index` (int).
+      
+      For bidirectional interaction between two graphs, use:
+      ```python
+      fig.update_layout(
+          meta={
+              'pylogue_linked_interaction': {
+                  'interactions': [
+                      {
+                          'source_trace': 0, 'target_trace': 1,
+                          'lookup': lookup_0_to_1
+                      },
+                      {
+                          'source_trace': 1, 'target_trace': 0, 
+                          'lookup': lookup_1_to_0
+                      }
+                  ]
+              }
+          }
+      )
+      ```
+      
       `lookup` keys can be `"<season>||<x_label>"` or `"<x_label>"`.
       Each payload can include `x`, `y`, `text`, `customdata`, `title`.
     """
@@ -914,18 +943,13 @@ snippets that start with `pd.DataFrame(data)`.
             "function setupLinkedInteraction(){"
             "const meta=((fig.layout||{}).meta||{}).pylogue_linked_interaction;"
             "if(!meta||typeof meta!=='object') return;"
-            "const sourceTrace=Number.isInteger(meta.source_trace)?meta.source_trace:0;"
-            "const targetTrace=Number.isInteger(meta.target_trace)?meta.target_trace:1;"
-            "const seasonMenuIndex=Number.isInteger(meta.season_menu_index)?meta.season_menu_index:0;"
-            "const lookup=(meta.lookup&&typeof meta.lookup==='object')?meta.lookup:{};"
-            "const defaultSeason=meta.default_season==null?'':String(meta.default_season);"
             "function normalizeLinkedSeries(value){"
             "if(Array.isArray(value) && value.length===1 && Array.isArray(value[0])){"
             "return value[0];"
             "}"
             "return value;"
             "}"
-            "function activeSeason(){"
+            "function activeSeason(seasonMenuIndex, defaultSeason){"
             "try{"
             "const menus=(gd.layout&&gd.layout.updatemenus)||[];"
             "const menu=menus[seasonMenuIndex];"
@@ -936,20 +960,45 @@ snippets that start with `pd.DataFrame(data)`.
             "return String(btn.label);"
             "}catch(_err){return defaultSeason;}"
             "}"
+            "function setupSingleInteraction(interaction){"
+            "const sourceTrace=Number.isInteger(interaction.source_trace)?interaction.source_trace:0;"
+            "const targetTrace=Number.isInteger(interaction.target_trace)?interaction.target_trace:1;"
+            "const seasonMenuIndex=Number.isInteger(interaction.season_menu_index)?interaction.season_menu_index:0;"
+            "const lookup=(interaction.lookup&&typeof interaction.lookup==='object')?interaction.lookup:{};"
+            "const defaultSeason=interaction.default_season==null?'':String(interaction.default_season);"
             "gd.on('plotly_click', function(eventData){"
             "const point=eventData&&eventData.points&&eventData.points[0];"
             "if(!point||point.curveNumber!==sourceTrace) return;"
-            "const label=String(point.x);"
-            "const season=activeSeason();"
+            "const _traceType=String(((gd.data||[])[sourceTrace]||{}).type||'bar').toLowerCase();"
+            "const _orientation=String(((gd.data||[])[sourceTrace]||{}).orientation||'v').toLowerCase();"
+            "const _pieFamily=['pie','sunburst','treemap','icicle','funnelarea'];"
+            "let label;"
+            "if(_pieFamily.includes(_traceType)){"
+            "label=String(point.label!=null?point.label:(point.id!=null?point.id:''));"
+            "}else if(_traceType==='heatmap'||_traceType==='contour'){"
+            "label=String(point.x)+'||'+String(point.y);"
+            "}else if(_orientation==='h'){"
+            "label=String(point.y);"
+            "}else{"
+            "label=String(point.x);"
+            "}"
+            "const season=activeSeason(seasonMenuIndex, defaultSeason);"
             "const combinedKey=season+'||'+label;"
             "const payload=lookup[combinedKey]||lookup[label];"
             "if(!payload||typeof payload!=='object') return;"
+            "const _targetType=String(((gd.data||[])[targetTrace]||{}).type||'bar').toLowerCase();"
+            "const _targetIsPie=_pieFamily.includes(_targetType);"
+            "const _allTraceKeys=['x','y','text','customdata','labels','values','marker'];"
             "const update={};"
-            "for(const key of TRACE_KEYS){"
+            "for(const key of _allTraceKeys){"
             "if(payload[key]!==undefined){"
-            "const val=(key==='customdata')?payload[key]:normalizeLinkedSeries(payload[key]);"
+            "const val=(key==='customdata'||key==='marker')?payload[key]:normalizeLinkedSeries(payload[key]);"
             "update[key]=[val];"
             "}"
+            "}"
+            "if(_targetIsPie){"
+            "if(update.x!==undefined&&update.labels===undefined){update.labels=update.x;delete update.x;}"
+            "if(update.y!==undefined&&update.values===undefined){update.values=update.y;delete update.y;}"
             "}"
             "if(Object.keys(update).length===0) return;"
             "try{"
@@ -957,7 +1006,7 @@ snippets that start with `pd.DataFrame(data)`.
             "const target=fullData[targetTrace]||{};"
             "const yRef=String(target.yaxis||'y');"
             "const yLayoutKey=(yRef==='y')?'yaxis':'yaxis'+yRef.slice(1);"
-            "const yVals=payload.y;"
+            "const yVals=_targetIsPie?(payload.values||payload.y):payload.y;"
             "if(Array.isArray(yVals) && yVals.length>0 && typeof yVals[0]==='string'){"
             "const patch={};"
             "patch[yLayoutKey+'.type']='category';"
@@ -968,7 +1017,7 @@ snippets that start with `pd.DataFrame(data)`.
             "if(payload.title){"
             "try{"
             "const anns=(gd.layout&&gd.layout.annotations)||[];"
-            "const idx=Number.isInteger(meta.target_title_annotation_index)?meta.target_title_annotation_index:(anns.length>1?1:0);"
+            "const idx=Number.isInteger(interaction.target_title_annotation_index)?interaction.target_title_annotation_index:(anns.length>1?1:0);"
             "if(anns.length && idx>=0 && idx<anns.length){"
             "const relayoutPatch={};"
             "relayoutPatch['annotations['+idx+'].text']=String(payload.title);"
@@ -979,6 +1028,16 @@ snippets that start with `pd.DataFrame(data)`.
             "}catch(_err){}"
             "}"
             "});"
+            "}"
+            "if(Array.isArray(meta.interactions)){"
+            "for(const interaction of meta.interactions){"
+            "if(interaction && typeof interaction==='object'){"
+            "setupSingleInteraction(interaction);"
+            "}"
+            "}"
+            "}else if(meta.source_trace!==undefined||meta.target_trace!==undefined||meta.lookup){"
+            "setupSingleInteraction(meta);"
+            "}"
             "}"
             "function mobileHeight(){"
             "if(explicitHeight) return defaultHeight;"
