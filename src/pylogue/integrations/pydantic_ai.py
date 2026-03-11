@@ -203,6 +203,7 @@ class PydanticAIResponder:
 
         pending_tool_calls = {}
         tool_call_counter = 0
+        buffered_html = []  # Buffer for charts/visualizations
 
         # Keep deps up to date for this request context.
         self.set_context(context)
@@ -264,10 +265,11 @@ class PydanticAIResponder:
                     if not self.show_tool_details:
                         display_name = self.tool_display_names.get(tool_name, tool_name)
                         yield _format_tool_status_done(args, call_id, display_name)
+                    # Buffer HTML/charts instead of yielding immediately
                     if resolved_html:
-                        yield _wrap_tool_html(resolved_html)
+                        buffered_html.append(_wrap_tool_html(resolved_html))
                     elif _should_render_tool_result_raw(tool_name, result):
-                        yield _wrap_tool_html(result)
+                        buffered_html.append(_wrap_tool_html(result))
                     elif self.show_tool_details:
                         display_name = self.tool_display_names.get(tool_name, tool_name)
                         yield _format_tool_result_summary(display_name, args, result)
@@ -279,3 +281,8 @@ class PydanticAIResponder:
                 if pending_tool_calls:
                     for tool_name, args in pending_tool_calls.values():
                         yield _format_tool_result_summary(tool_name, args, None)
+        
+        # After all text streaming is complete, yield buffered HTML/charts
+        for html_chunk in buffered_html:
+            yield html_chunk
+            await asyncio.sleep(0)

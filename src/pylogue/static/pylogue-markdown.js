@@ -249,7 +249,17 @@ const renderMarkdown = (root = document) => {
             : rawAttr !== null
               ? rawAttr
               : el.textContent;
+        
+        // Early exit if already rendered with exact same source
         if (el.dataset.renderedSource === source) return;
+        
+        // Early exit if element is locked (contains graphs/scripts that shouldn't be re-rendered)
+        if (el.dataset.htmlLocked === "true") {
+            // Update tracking in case source changed but we want to keep it locked
+            el.dataset.renderedSource = source;
+            return;
+        }
+        
         if (el.dataset.mermaidDirty === "true") return;
         const normalizedSource = dedentHtml(source);
         const split = splitDivHtmlBlock(normalizedSource);
@@ -266,7 +276,49 @@ const renderMarkdown = (root = document) => {
             return;
         }
         if (looksLikeHtmlBlock(normalizedSource)) {
+            // If this element has been locked (contains rendered graphs/scripts), never re-render
+            if (el.dataset.htmlLocked === "true") {
+                console.log('[PYLOGUE] Skipped re-render: element is locked');
+                return;
+            }
+            
+            // Double-check: if already rendered with same source, skip completely
+            if (el.dataset.renderedSource === source) {
+                console.log('[PYLOGUE] Skipped re-render: source matches');
+                return;
+            }
+            
+            // Check if this HTML block contains iframe with graphs
+            // If we already have an iframe rendered, never replace it
+            if (el.querySelector('iframe') && el.dataset.renderedSource) {
+                console.log('[PYLOGUE] Skipped re-render: iframe already exists');
+                el.dataset.htmlLocked = "true";
+                el.dataset.renderedSource = source;
+                return;
+            }
+            
+            // Additional check: if innerHTML is already the same, don't re-render
+            const currentContent = el.innerHTML.trim();
+            const newContent = normalizedSource.trim();
+            if (currentContent === newContent && el.dataset.renderedSource) {
+                // Content is identical, just update tracking
+                el.dataset.renderedSource = source;
+                // Lock it to prevent any future re-renders
+                el.dataset.htmlLocked = "true";
+                console.log('[PYLOGUE] Locked element: content matches');
+                return;
+            }
+            
+            console.log('[PYLOGUE] Rendering HTML block, contains script:', normalizedSource.includes('<script'));
             el.innerHTML = normalizedSource;
+            el.dataset.renderedSource = source;
+            
+            // If this HTML contains script tags (like Plotly) or iframes, lock it immediately
+            if (normalizedSource.includes('<script') || normalizedSource.includes('plotly') || normalizedSource.includes('<iframe')) {
+                el.dataset.htmlLocked = "true";
+                console.log('[PYLOGUE] Locked element: contains scripts/iframe');
+            }
+            
             // Scroll after HTML content (like charts) is rendered
             requestAnimationFrame(() => {
                 if (window.__applyToolStatusUpdates) {
@@ -288,8 +340,8 @@ const renderMarkdown = (root = document) => {
             renderMath(el);
             highlightCode(el);
             addCopyButtons(el);
+            el.dataset.renderedSource = source;
         }
-        el.dataset.renderedSource = source;
     });
     markdownRendering = false;
     if (window.__upgradeMermaidBlocks) {
@@ -373,12 +425,82 @@ const applyToolStatusUpdates = (root = document) => {
 };
 window.__applyToolStatusUpdates = applyToolStatusUpdates;
 
+// Store iframes before htmx swaps to prevent reloading graphs
+let preservedIframes = [];
+
+document.body.addEventListener("htmx:beforeSwap", (event) => {
+    const target = event.detail && event.detail.target;
+    if (target && target.id === "cards") {
+        // Find all iframes with graphs and preserve them BY REFERENCE
+        const markedElements = target.querySelectorAll('.marked');
+        preservedIframes = [];
+        
+        markedElements.forEach((marked, index) => {
+            const iframe = marked.querySelector('iframe');
+            if (iframe) {
+                // Extract a unique identifier from the parent's data-raw-b64 or content
+                const rawB64 = marked.getAttribute('data-raw-b64');
+                const rawAttr = marked.getAttribute('data-raw');
+                const contentHash = rawB64 || rawAttr || marked.textContent.substring(0, 100);
+                
+                preservedIframes.push({
+                    iframe: iframe,  // Actual DOM element reference
+                    contentHash: contentHash,
+                    index: index
+                });
+                console.log('[PYLOGUE] Preserved iframe at index', index, 'hash:', contentHash.substring(0, 30));
+            }
+        });
+        
+        console.log('[PYLOGUE] Total iframes preserved:', preservedIframes.length);
+    }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     observeMarkdown();
     renderMarkdown(document);
 });
 
 document.body.addEventListener("htmx:afterSwap", (event) => {
+    const target = event.detail && event.detail.target;
+    
+    // Restore preserved iframes after swap to prevent reloading
+    if (target && target.id === "cards" && preservedIframes.length > 0) {
+        const newMarkedElements = target.querySelectorAll('.marked');
+        
+        newMarkedElements.forEach((marked, index) => {
+            const rawB64 = marked.getAttribute('data-raw-b64');
+            const rawAttr = marked.getAttribute('data-raw');
+            const contentHash = rawB64 || rawAttr || marked.textContent.substring(0, 100);
+            
+            // Find matching preserved iframe by content hash
+            const preserved = preservedIframes.find(p => 
+                p.contentHash === contentHash || p.index === index
+            );
+            
+            if (preserved && preserved.iframe) {
+                const existingIframe = marked.querySelector('iframe');
+                
+                // Only restore if new DOM doesn't already have an iframe
+                if (!existingIframe) {
+                    // Clear the marked element and insert the preserved iframe
+                    marked.innerHTML = '';
+                    marked.appendChild(preserved.iframe);
+                    marked.dataset.htmlLocked = "true";
+                    marked.dataset.renderedSource = "locked";
+                    console.log('[PYLOGUE] Restored iframe at index', index);
+                } else {
+                    console.log('[PYLOGUE] Iframe already exists at index', index);
+                }
+            }
+        });
+        
+        // Clear after restoration
+        setTimeout(() => {
+            preservedIframes = [];
+        }, 100);
+    }
+    
     renderMarkdown(event.target || document);
 });
 
