@@ -113,6 +113,88 @@ const looksLikeHtmlBlock = (text) => {
     return /<\/?[a-zA-Z][\s\S]*?>/.test(trimmed);
 };
 
+const containsHtmlAndMarkdown = (text) => {
+    if (!text) return false;
+    
+    // Check for HTML elements 
+    const hasHtml = /<\/?[a-zA-Z][\s\S]*?>/.test(text);
+    if (!hasHtml) return false;
+    
+    // Check for markdown patterns (tables, headers, emphasis, etc.)
+    const markdownPatterns = [
+        /\|.*\|.*\|/,           // Table rows
+        /^#+\s/m,              // Headers
+        /\*\*.*\*\*/,          // Bold
+        /\*.*\*/,              // Italic  
+        /^-\s/m,               // Lists
+        /^\d+\.\s/m,          // Numbered lists
+        /```[\s\S]*?```/,      // Code blocks
+    ];
+    
+    return markdownPatterns.some(pattern => pattern.test(text));
+};
+
+const processMixedContent = (content) => {
+    if (!content) return content;
+    
+    // Split content into segments: HTML elements and non-HTML text
+    const segments = [];
+    let currentPos = 0;
+    
+    // Find HTML elements using a more comprehensive regex
+    const htmlRegex = /<([a-zA-Z][^>]*)>[\s\S]*?<\/\1>|<[a-zA-Z][^>]*\/?>|<\/[a-zA-Z][^>]*>/g;
+    let match;
+    
+    while ((match = htmlRegex.exec(content)) !== null) {
+        // Add text before HTML element (process as markdown)
+        if (match.index > currentPos) {
+            const textSegment = content.slice(currentPos, match.index).trim();
+            if (textSegment) {
+                segments.push({
+                    type: 'markdown',
+                    content: textSegment
+                });
+            }
+        }
+        
+        // Add HTML element (keep as HTML)
+        segments.push({
+            type: 'html', 
+            content: match[0].trim()
+        });
+        
+        currentPos = match.index + match[0].length;
+    }
+    
+    // Add remaining text after last HTML element (process as markdown)
+    if (currentPos < content.length) {
+        const remainingText = content.slice(currentPos).trim();
+        if (remainingText) {
+            segments.push({
+                type: 'markdown',
+                content: remainingText
+            });
+        }
+    }
+    
+    // Process each segment and combine
+    const processedSegments = segments.map(segment => {
+        if (segment.type === 'html') {
+            return segment.content;
+        } else {
+            // Process markdown
+            try {
+                return marked.parse(segment.content);
+            } catch (error) {
+                console.warn('Markdown processing failed for segment:', error);
+                return segment.content;
+            }
+        }
+    });
+    
+    return processedSegments.join('\n');
+};
+
 const dedentHtml = (text) => {
     if (!looksLikeHtmlBlock(text)) return text;
     const lines = text.split(/\r?\n/);
@@ -334,6 +416,25 @@ const renderMarkdown = (root = document) => {
                     window.__applyToolStatusUpdates(document);
                 }
             }, 100);
+        } else if (containsHtmlAndMarkdown(normalizedSource)) {
+            // Handle mixed HTML/Markdown content
+            console.log('Processing mixed HTML/Markdown content:', {
+                length: normalizedSource.length,
+                hasTable: /\|.*\|.*\|/.test(normalizedSource),
+                hasHtml: /<\/?[a-zA-Z][\s\S]*?>/.test(normalizedSource),
+                preview: normalizedSource.substring(0, 100) + '...'
+            });
+            const processedContent = processMixedContent(normalizedSource);
+            el.innerHTML = processedContent;
+            renderMath(el);
+            highlightCode(el);
+            addCopyButtons(el);
+            // Apply tool status updates for mixed content
+            requestAnimationFrame(() => {
+                if (window.__applyToolStatusUpdates) {
+                    window.__applyToolStatusUpdates(document);
+                }
+            });
         } else {
             const safeSource = protectEscapedDollars(normalizedSource);
             el.innerHTML = marked.parse(safeSource);
