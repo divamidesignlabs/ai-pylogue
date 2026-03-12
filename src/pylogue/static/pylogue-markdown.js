@@ -82,8 +82,9 @@ const decodeB64 = (value) => {
     try {
         const binary = atob(value);
         const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-        return new TextDecoder("utf-8").decode(bytes);
-    } catch {
+        const decoded = new TextDecoder("utf-8").decode(bytes);
+        return decoded;
+    } catch (error) {
         return "";
     }
 };
@@ -116,59 +117,147 @@ const looksLikeHtmlBlock = (text) => {
 const containsHtmlAndMarkdown = (text) => {
     if (!text) return false;
     
-    // Check for HTML elements 
+    // Check for HTML elements or Pylogue HTML placeholders
     const hasHtml = /<\/?[a-zA-Z][\s\S]*?>/.test(text);
-    if (!hasHtml) return false;
+    const hasPylogueHtml = /\{_pylogue_html_id:\s*"[^"]+"\}/.test(text);
+    
+    if (!hasHtml && !hasPylogueHtml) return false;
     
     // Check for markdown patterns (tables, headers, emphasis, etc.)
     const markdownPatterns = [
         /\|.*\|.*\|/,           // Table rows
         /^#+\s/m,              // Headers
         /\*\*.*\*\*/,          // Bold
-        /\*.*\*/,              // Italic  
-        /^-\s/m,               // Lists
+        /^\s*\*\s+/m,          // Lists with asterisks
+        /^-\s/m,               // Lists with dashes
         /^\d+\.\s/m,          // Numbered lists
         /```[\s\S]*?```/,      // Code blocks
     ];
     
-    return markdownPatterns.some(pattern => pattern.test(text));
+    const matchedPatterns = markdownPatterns.filter(pattern => pattern.test(text));
+    const hasMixed = matchedPatterns.length > 0;
+    return hasMixed;
 };
 
 const processMixedContent = (content) => {
     if (!content) return content;
     
-    // Split content into segments: HTML elements and non-HTML text
+    // First, identify and protect tool status blocks as complete units
+    const toolStatusBlocks = [];
+    let protectedContent = content;
+    
+    // Match complete tool status structures (including nested elements)
+    const toolStatusRegex = /<div[^>]*class="tool-status-update"[^>]*>[\s\S]*?<\/div>\s*(?:<span[^>]*class="tool-status-check"[^>]*>[\s\S]*?<\/span>)?/g;
+    let toolMatch;
+    let toolIndex = 0;
+    
+    while ((toolMatch = toolStatusRegex.exec(content)) !== null) {
+        const placeholder = `__PYLOGUE_TOOL_STATUS_${toolIndex}__`;
+        toolStatusBlocks.push(toolMatch[0]);
+        protectedContent = protectedContent.replace(toolMatch[0], placeholder);
+        toolIndex++;
+    }
+    
+    // Also protect Pylogue HTML placeholders
+    const pylogueHtmlBlocks = [];
+    const pylogueHtmlRegex = /\{_pylogue_html_id:\s*"[^"]+"\}/g;
+    let pylogueMatch;
+    let pylogueIndex = 0;
+    
+    while ((pylogueMatch = pylogueHtmlRegex.exec(protectedContent)) !== null) {
+        const placeholder = `__PYLOGUE_HTML_PLACEHOLDER_${pylogueIndex}__`;
+        pylogueHtmlBlocks.push(pylogueMatch[0]);
+        protectedContent = protectedContent.replace(pylogueMatch[0], placeholder);
+        pylogueIndex++;
+    }
+    
+    // Now split the protected content into segments: HTML elements and non-HTML text
     const segments = [];
     let currentPos = 0;
     
-    // Find HTML elements using a more comprehensive regex
-    const htmlRegex = /<([a-zA-Z][^>]*)>[\s\S]*?<\/\1>|<[a-zA-Z][^>]*\/?>|<\/[a-zA-Z][^>]*>/g;
-    let match;
+    // Find HTML blocks - improved regex to handle nested and complex structures
+    const htmlBlocks = [];
     
-    while ((match = htmlRegex.exec(content)) !== null) {
-        // Add text before HTML element (process as markdown)
-        if (match.index > currentPos) {
-            const textSegment = content.slice(currentPos, match.index).trim();
-            if (textSegment) {
+    // First, find all HTML opening tags
+    const tagRegex = /<([a-zA-Z][^>\/]*)(?:[^>]*)>/g;
+    let tagMatch;
+    
+    while ((tagMatch = tagRegex.exec(protectedContent)) !== null) {
+        const tagName = tagMatch[1].split(/\s/)[0]; // Get just the tag name
+        const tagStart = tagMatch.index;
+        // Find the matching closing tag
+        let depth = 1;
+        let searchPos = tagMatch.index + tagMatch[0].length;
+        const openTagRegex = new RegExp(`<${tagName}(?:\\s[^>]*)?>`, 'gi');
+        const closeTagRegex = new RegExp(`<\/${tagName}>`, 'gi');
+        
+        while (depth > 0 && searchPos < protectedContent.length) {
+            openTagRegex.lastIndex = searchPos;
+            closeTagRegex.lastIndex = searchPos;
+            
+            const nextOpen = openTagRegex.exec(protectedContent);
+            const nextClose = closeTagRegex.exec(protectedContent);
+            
+            if (nextClose && (!nextOpen || nextClose.index < nextOpen.index)) {
+                depth--;
+                searchPos = nextClose.index + nextClose[0].length;
+            } else if (nextOpen) {
+                depth++;
+                searchPos = nextOpen.index + nextOpen[0].length;
+            } else {
+                break;
+            }
+        }
+        
+        if (depth === 0) {
+            htmlBlocks.push({
+                start: tagStart,
+                end: searchPos,
+                content: protectedContent.slice(tagStart, searchPos)
+            });
+        }
+    }
+    
+    // Sort HTML blocks by start position and merge overlapping ones
+    htmlBlocks.sort((a, b) => a.start - b.start);
+    const mergedBlocks = [];
+    for (const block of htmlBlocks) {
+        const lastBlock = mergedBlocks[mergedBlocks.length - 1];
+        if (lastBlock && block.start <= lastBlock.end) {
+            // Extend the last block if they overlap
+            lastBlock.end = Math.max(lastBlock.end, block.end);
+            lastBlock.content = protectedContent.slice(lastBlock.start, lastBlock.end);
+        } else {
+            mergedBlocks.push(block);
+        }
+    }
+    
+    // Create segments from merged blocks
+    let pos = 0;
+    for (const htmlBlock of mergedBlocks) {
+        // Add text before HTML block as markdown
+        if (htmlBlock.start > pos) {
+            const textContent = protectedContent.slice(pos, htmlBlock.start).trim();
+            if (textContent) {
                 segments.push({
                     type: 'markdown',
-                    content: textSegment
+                    content: textContent
                 });
             }
         }
         
-        // Add HTML element (keep as HTML)
+        // Add HTML block
         segments.push({
-            type: 'html', 
-            content: match[0].trim()
+            type: 'html',
+            content: htmlBlock.content.trim()
         });
         
-        currentPos = match.index + match[0].length;
+        pos = htmlBlock.end;
     }
     
-    // Add remaining text after last HTML element (process as markdown)
-    if (currentPos < content.length) {
-        const remainingText = content.slice(currentPos).trim();
+    // Add any remaining text after last HTML block
+    if (pos < protectedContent.length) {
+        const remainingText = protectedContent.slice(pos).trim();
         if (remainingText) {
             segments.push({
                 type: 'markdown',
@@ -178,21 +267,65 @@ const processMixedContent = (content) => {
     }
     
     // Process each segment and combine
-    const processedSegments = segments.map(segment => {
+    const processedSegments = segments.map((segment, index) => {
         if (segment.type === 'html') {
             return segment.content;
         } else {
-            // Process markdown
+            // Process markdown, but protect our placeholders from being altered
             try {
-                return marked.parse(segment.content);
+                let segmentContent = segment.content;
+                
+                // Temporarily protect any remaining placeholders in markdown content
+                const placeholderMatches = segmentContent.match(/__PYLOGUE_(TOOL_STATUS|HTML_PLACEHOLDER)_\d+__/g) || [];
+                const tempProtections = {};
+                
+                placeholderMatches.forEach((placeholder, i) => {
+                    const tempKey = `__TEMP_PROTECT_${i}__`;
+                    tempProtections[tempKey] = placeholder;
+                    segmentContent = segmentContent.replace(placeholder, tempKey);
+                });
+                
+                const processed = marked.parse(segmentContent);
+                
+                // Restore protected placeholders
+                let finalProcessed = processed;
+                Object.keys(tempProtections).forEach(tempKey => {
+                    finalProcessed = finalProcessed.replace(tempKey, tempProtections[tempKey]);
+                });
+                
+
+                return finalProcessed;
             } catch (error) {
-                console.warn('Markdown processing failed for segment:', error);
                 return segment.content;
             }
         }
     });
     
-    return processedSegments.join('\n');
+    let result = processedSegments.join('\n');
+    
+    // Restore protected tool status blocks
+    toolStatusBlocks.forEach((block, index) => {
+        const placeholder = `__PYLOGUE_TOOL_STATUS_${index}__`;
+        result = result.replace(placeholder, block);
+    });
+    
+    // Restore protected Pylogue HTML placeholders
+    pylogueHtmlBlocks.forEach((block, index) => {
+        const placeholder = `__PYLOGUE_HTML_PLACEHOLDER_${index}__`;
+        result = result.replace(placeholder, block);
+    });
+    
+    // Final cleanup: remove any remaining placeholders that shouldn't be visible
+    const remainingPlaceholders = result.match(/__PYLOGUE_(TOOL_STATUS|HTML_PLACEHOLDER)_\d+__/g);
+    if (remainingPlaceholders && remainingPlaceholders.length > 0) {
+        // Remove them to prevent showing in UI
+        remainingPlaceholders.forEach(placeholder => {
+            result = result.replace(new RegExp(placeholder, 'g'), '');
+        });
+    }
+
+    
+    return result;
 };
 
 const dedentHtml = (text) => {
@@ -320,10 +453,16 @@ const addCopyButtons = (root) => {
 
 const renderMarkdown = (root = document) => {
     const nodes = root.querySelectorAll(".marked");
-    if (!marked || typeof marked.parse !== "function") return;
-    if (nodes.length === 0) return;
+    
+    if (!marked || typeof marked.parse !== "function") {
+        return;
+    }
+    if (nodes.length === 0) {
+        return;
+    }
+    
     markdownRendering = true;
-    nodes.forEach((el) => {
+    nodes.forEach((el, index) => {
         const rawB64 = el.getAttribute("data-raw-b64");
         const rawAttr = el.getAttribute("data-raw");
         const source = rawB64
@@ -332,20 +471,32 @@ const renderMarkdown = (root = document) => {
               ? rawAttr
               : el.textContent;
         
+        if (!source) {
+            return;
+        }
+              
         // Early exit if already rendered with exact same source
-        if (el.dataset.renderedSource === source) return;
+        if (el.dataset.renderedSource === source) {
+            return;
+        }
         
         // Early exit if element is locked (contains graphs/scripts that shouldn't be re-rendered)
         if (el.dataset.htmlLocked === "true") {
-            // Update tracking in case source changed but we want to keep it locked
             el.dataset.renderedSource = source;
             return;
         }
         
-        if (el.dataset.mermaidDirty === "true") return;
+        if (el.dataset.mermaidDirty === "true") {
+            return;
+        }
+        
         const normalizedSource = dedentHtml(source);
+        
+        // Check if we have mixed content FIRST - bypass splitDivHtmlBlock for proper text formatting
+        const isMixed = containsHtmlAndMarkdown(normalizedSource);
+
         const split = splitDivHtmlBlock(normalizedSource);
-        if (split) {
+        if (split && !isMixed) {
             const safePrefix = protectEscapedDollars(split.prefix);
             const safeSuffix = protectEscapedDollars(split.suffix);
             const prefixHtml = safePrefix ? marked.parse(safePrefix) : "";
@@ -357,48 +508,46 @@ const renderMarkdown = (root = document) => {
             el.dataset.renderedSource = source;
             return;
         }
-        if (looksLikeHtmlBlock(normalizedSource)) {
-            // If this element has been locked (contains rendered graphs/scripts), never re-render
-            if (el.dataset.htmlLocked === "true") {
-                console.log('[PYLOGUE] Skipped re-render: element is locked');
-                return;
-            }
+        
+        const isHtml = looksLikeHtmlBlock(normalizedSource);
+        
+        // Check for mixed HTML/Markdown content FIRST (before pure HTML check)
+        if (isMixed) {
+            const processedContent = processMixedContent(normalizedSource);
+            el.innerHTML = processedContent;
+            el.dataset.renderedSource = source;
+            renderMath(el);
+            highlightCode(el);
+            addCopyButtons(el);
             
-            // Double-check: if already rendered with same source, skip completely
-            if (el.dataset.renderedSource === source) {
-                console.log('[PYLOGUE] Skipped re-render: source matches');
-                return;
-            }
+            requestAnimationFrame(() => {
+                if (window.__applyToolStatusUpdates) {
+                    window.__applyToolStatusUpdates(document);
+                }
+            });
+        } else if (isHtml) {
+            if (el.dataset.htmlLocked === "true") return;
+            if (el.dataset.renderedSource === source) return;
             
-            // Check if this HTML block contains iframe with graphs
-            // If we already have an iframe rendered, never replace it
             if (el.querySelector('iframe') && el.dataset.renderedSource) {
-                console.log('[PYLOGUE] Skipped re-render: iframe already exists');
                 el.dataset.htmlLocked = "true";
                 el.dataset.renderedSource = source;
                 return;
             }
             
-            // Additional check: if innerHTML is already the same, don't re-render
             const currentContent = el.innerHTML.trim();
             const newContent = normalizedSource.trim();
             if (currentContent === newContent && el.dataset.renderedSource) {
-                // Content is identical, just update tracking
                 el.dataset.renderedSource = source;
-                // Lock it to prevent any future re-renders
                 el.dataset.htmlLocked = "true";
-                console.log('[PYLOGUE] Locked element: content matches');
                 return;
             }
-            
-            console.log('[PYLOGUE] Rendering HTML block, contains script:', normalizedSource.includes('<script'));
             el.innerHTML = normalizedSource;
             el.dataset.renderedSource = source;
             
             // If this HTML contains script tags (like Plotly) or iframes, lock it immediately
             if (normalizedSource.includes('<script') || normalizedSource.includes('plotly') || normalizedSource.includes('<iframe')) {
                 el.dataset.htmlLocked = "true";
-                console.log('[PYLOGUE] Locked element: contains scripts/iframe');
             }
             
             // Scroll after HTML content (like charts) is rendered
@@ -416,28 +565,14 @@ const renderMarkdown = (root = document) => {
                     window.__applyToolStatusUpdates(document);
                 }
             }, 100);
-        } else if (containsHtmlAndMarkdown(normalizedSource)) {
-            // Handle mixed HTML/Markdown content
-            console.log('Processing mixed HTML/Markdown content:', {
-                length: normalizedSource.length,
-                hasTable: /\|.*\|.*\|/.test(normalizedSource),
-                hasHtml: /<\/?[a-zA-Z][\s\S]*?>/.test(normalizedSource),
-                preview: normalizedSource.substring(0, 100) + '...'
-            });
-            const processedContent = processMixedContent(normalizedSource);
-            el.innerHTML = processedContent;
-            renderMath(el);
-            highlightCode(el);
-            addCopyButtons(el);
-            // Apply tool status updates for mixed content
-            requestAnimationFrame(() => {
-                if (window.__applyToolStatusUpdates) {
-                    window.__applyToolStatusUpdates(document);
-                }
-            });
         } else {
+            // Handle pure markdown content            
             const safeSource = protectEscapedDollars(normalizedSource);
-            el.innerHTML = marked.parse(safeSource);
+            const parsedMarkdown = marked.parse(safeSource);
+            
+
+            
+            el.innerHTML = parsedMarkdown;
             renderMath(el);
             highlightCode(el);
             addCopyButtons(el);
@@ -461,7 +596,10 @@ const renderMarkdown = (root = document) => {
 
 const observeMarkdown = () => {
     const target = document.body;
-    if (!target) return;
+    if (!target) {
+        return;
+    }
+    
     let renderTimer = null;
     const scheduleRender = () => {
         if (markdownRendering) return;
@@ -536,28 +674,33 @@ document.body.addEventListener("htmx:beforeSwap", (event) => {
         const markedElements = target.querySelectorAll('.marked');
         preservedIframes = [];
         
-        markedElements.forEach((marked, index) => {
-            const iframe = marked.querySelector('iframe');
+        markedElements.forEach((markedElement, index) => {
+            const iframe = markedElement.querySelector('iframe');
             if (iframe) {
                 // Extract a unique identifier from the parent's data-raw-b64 or content
-                const rawB64 = marked.getAttribute('data-raw-b64');
-                const rawAttr = marked.getAttribute('data-raw');
-                const contentHash = rawB64 || rawAttr || marked.textContent.substring(0, 100);
+                const rawB64 = markedElement.getAttribute('data-raw-b64');
+                const rawAttr = markedElement.getAttribute('data-raw');
+                const contentHash = rawB64 || rawAttr || markedElement.textContent.substring(0, 100);
                 
                 preservedIframes.push({
                     iframe: iframe,  // Actual DOM element reference
                     contentHash: contentHash,
                     index: index
                 });
-                console.log('[PYLOGUE] Preserved iframe at index', index, 'hash:', contentHash.substring(0, 30));
+
             }
         });
-        
-        console.log('[PYLOGUE] Total iframes preserved:', preservedIframes.length);
     }
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Check for .marked elements immediately
+    const markedElements = document.querySelectorAll('.marked');
+    
+    markedElements.forEach((el, index) => {
+        // Element info logging removed
+    });
+    
     observeMarkdown();
     renderMarkdown(document);
 });
@@ -569,10 +712,10 @@ document.body.addEventListener("htmx:afterSwap", (event) => {
     if (target && target.id === "cards" && preservedIframes.length > 0) {
         const newMarkedElements = target.querySelectorAll('.marked');
         
-        newMarkedElements.forEach((marked, index) => {
-            const rawB64 = marked.getAttribute('data-raw-b64');
-            const rawAttr = marked.getAttribute('data-raw');
-            const contentHash = rawB64 || rawAttr || marked.textContent.substring(0, 100);
+        newMarkedElements.forEach((markedElement, index) => {
+            const rawB64 = markedElement.getAttribute('data-raw-b64');
+            const rawAttr = markedElement.getAttribute('data-raw');
+            const contentHash = rawB64 || rawAttr || markedElement.textContent.substring(0, 100);
             
             // Find matching preserved iframe by content hash
             const preserved = preservedIframes.find(p => 
@@ -580,18 +723,15 @@ document.body.addEventListener("htmx:afterSwap", (event) => {
             );
             
             if (preserved && preserved.iframe) {
-                const existingIframe = marked.querySelector('iframe');
+                const existingIframe = markedElement.querySelector('iframe');
                 
                 // Only restore if new DOM doesn't already have an iframe
                 if (!existingIframe) {
                     // Clear the marked element and insert the preserved iframe
-                    marked.innerHTML = '';
-                    marked.appendChild(preserved.iframe);
-                    marked.dataset.htmlLocked = "true";
-                    marked.dataset.renderedSource = "locked";
-                    console.log('[PYLOGUE] Restored iframe at index', index);
-                } else {
-                    console.log('[PYLOGUE] Iframe already exists at index', index);
+                    markedElement.innerHTML = '';
+                    markedElement.appendChild(preserved.iframe);
+                    markedElement.dataset.htmlLocked = "true";
+                    markedElement.dataset.renderedSource = "locked";
                 }
             }
         });
@@ -910,8 +1050,7 @@ const renderMermaidWrapper = async (wrapper) => {
     } catch (err) {
         wrapper.innerHTML =
             '<div class="mermaid-error">Invalid Mermaid diagram</div>';
-        wrapper.dataset.mermaidError = "true";
-        console.warn("[mermaid] render failed", err);
+
     } finally {
         wrapper.dataset.mermaidRendering = "false";
         mermaidRenderPromises.delete(codeText);
