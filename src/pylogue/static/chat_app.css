@@ -370,7 +370,7 @@ body.history-open .history-dropdown {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* overflow: hidden; */
   background: transparent;
 }
 
