@@ -131,9 +131,9 @@ if not defects_path.exists():
 vdf = pd.read_csv(defects_path)
 
 
-LITELLM_API_KEY = os.getenv("LITELLM_API_KEY")
-LITELLM_API_BASE_URL = os.getenv("LITELLM_API_BASE_URL")
-MODEL_NAME = os.getenv("MODEL_NAME")
+LITELLM_API_KEY = os.getenv("LITELLM_PROVIDER_API_KEY")
+LITELLM_API_BASE_URL = os.getenv("LITELLM_PROVIDER_BASE_URL")
+MODEL_NAME = os.getenv("LITELLM_PROVIDER_MODEL_NAME")
 
 # Create OpenAI provider pointing to LiteLLM
 provider = OpenAIProvider(

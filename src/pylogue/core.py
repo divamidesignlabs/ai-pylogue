@@ -22,6 +22,13 @@ _CORE_STATIC_DIR = Path(__file__).resolve().parent / "static"
 _LOG = logging.getLogger(__name__)
 
 
+# Default extra scopes requested when PYLOGUE_USE_CONSENT=true
+_DEFAULT_CONSENT_SCOPES: tuple[str, ...] = (
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/chat.messages.readonly",
+)
+
+
 @dataclass(frozen=True)
 class GoogleOAuthConfig:
     client_id: str
@@ -30,6 +37,10 @@ class GoogleOAuthConfig:
     allowed_emails: tuple[str, ...] = ()
     auth_required: bool = True
     session_secret: str | None = None
+    # When True the OAuth flow requests extra scopes and stores the token in
+    # the session so downstream code can call Gmail / Chat on the user's behalf.
+    use_consent: bool = False
+    extra_scopes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -46,6 +57,14 @@ def _split_csv_env(value: str | None) -> tuple[str, ...]:
     return tuple(part.strip() for part in value.split(",") if part.strip())
 
 
+def _split_scopes_env(value: str | None) -> tuple[str, ...]:
+    """Parse a scope string that may be space- or comma-separated (or both)."""
+    if not value:
+        return ()
+    # Replace commas with spaces so a single split handles both formats.
+    return tuple(part for part in value.replace(",", " ").split() if part)
+
+
 def _env_bool(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
     if raw is None:
@@ -58,6 +77,17 @@ def google_oauth_config_from_env() -> GoogleOAuthConfig | None:
     client_secret = os.getenv("PYLOGUE_GOOGLE_CLIENT_SECRET") or os.getenv("PYLOGUE_CLIENT_SECRET")
     if not (client_id and client_secret):
         return None
+    use_consent = _env_bool("PYLOGUE_USE_CONSENT", default=False)
+    # Scopes are only read when the consent flag is explicitly enabled.
+    # Scope resolution order (first match wins):
+    #   1. PYLOGUE_GOOGLE_EXTRA_SCOPES  — pylogue-specific override (comma or space separated)
+    #   2. GOOGLE_OAUTH_SCOPES          — existing env var (space separated, your standard format)
+    #   3. _DEFAULT_CONSENT_SCOPES      — built-in defaults (gmail + chat)
+    if use_consent:
+        raw_extra = os.getenv("PYLOGUE_GOOGLE_EXTRA_SCOPES") or os.getenv("GOOGLE_OAUTH_SCOPES")
+        extra_scopes = _split_scopes_env(raw_extra) if raw_extra else _DEFAULT_CONSENT_SCOPES
+    else:
+        extra_scopes = ()
     return GoogleOAuthConfig(
         client_id=client_id,
         client_secret=client_secret,
@@ -65,6 +95,8 @@ def google_oauth_config_from_env() -> GoogleOAuthConfig | None:
         allowed_emails=_split_csv_env(os.getenv("PYLOGUE_GOOGLE_ALLOWED_EMAILS")),
         auth_required=_env_bool("PYLOGUE_AUTH_REQUIRED", default=True),
         session_secret=os.getenv("PYLOGUE_SESSION_SECRET"),
+        use_consent=use_consent,
+        extra_scopes=extra_scopes,
     )
 
 
@@ -180,13 +212,27 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
         raise RuntimeError("Google OAuth requires authlib. Install with `pip install authlib`.") from exc
 
     oauth = OAuth()
+    _base_scopes = "openid email profile"
+    if cfg.use_consent and cfg.extra_scopes:
+        _scope_str = _base_scopes + " " + " ".join(cfg.extra_scopes)
+    else:
+        _scope_str = _base_scopes
+
     oauth.register(
         name="google",
         client_id=cfg.client_id,
         client_secret=cfg.client_secret,
         server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
         userinfo_endpoint="https://openidconnect.googleapis.com/v1/userinfo",
-        client_kwargs={"scope": "openid email profile"},
+        client_kwargs={
+            "scope": _scope_str,
+            # Request offline access so Google returns a refresh_token when
+            # consent mode is enabled; ignored by Google when not applicable.
+            **({
+                "access_type": "offline",
+                "prompt": "consent",
+            } if cfg.use_consent else {}),
+        },
     )
 
     base = _normalize_base_path(base_path)
@@ -250,12 +296,21 @@ def _register_google_auth_routes(app, cfg: GoogleOAuthConfig, base_path: str = "
         if cfg.allowed_emails and (not email or email not in cfg.allowed_emails):
             return RedirectResponse(f"{login_path}?error=Google+account+not+allowed", status_code=303)
 
-        request.session["auth"] = {
+        auth_payload: dict = {
             "provider": "google",
             "email": email,
             "name": userinfo.get("name") if isinstance(userinfo, dict) else None,
             "picture": userinfo.get("picture") if isinstance(userinfo, dict) else None,
         }
+        if cfg.use_consent and isinstance(token, dict):
+            # Store tokens so downstream code can call Gmail / Chat APIs on
+            # behalf of this user.  Refresh token is only present on the first
+            # consent grant (or when prompt=consent forces a new grant).
+            auth_payload["access_token"] = token.get("access_token")
+            auth_payload["refresh_token"] = token.get("refresh_token")
+            auth_payload["token_type"] = token.get("token_type", "Bearer")
+            auth_payload["expires_at"] = token.get("expires_at")
+        request.session["auth"] = auth_payload
         next_url = request.session.pop("next", default_next)
         return RedirectResponse(next_url, status_code=303)
 
@@ -515,11 +570,11 @@ def get_core_headers(include_markdown: bool = True):
         headers.append(
             Script(src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js")
         )
-        headers.append(Script(src="/static/pylogue-markdown.js", type="module"))
+        headers.append(Script(src="./static/pylogue-markdown.js", type="module"))
 
-    headers.append(Link(rel="stylesheet", href="/static/pylogue-core.css"))
-    headers.append(Script(src="/static/pylogue-core.js", type="module"))
-    headers.append(Link(rel="icon", href="/favicon.svg", type="image/svg+xml"))
+    headers.append(Link(rel="stylesheet", href="./static/pylogue-core.css"))
+    headers.append(Script(src="./static/pylogue-core.js", type="module"))
+    headers.append(Link(rel="icon", href="./favicon.svg", type="image/svg+xml"))
 
     return headers
 
@@ -770,6 +825,10 @@ def register_routes(
             request.session["next"] = chat_path
             login_path = auth_paths["login_path"] if auth_paths else "/login"
             return RedirectResponse(f"{login_path}?next={quote_plus(chat_path)}", status_code=303)
+        # Use ASGI root_path so ws_connect is correct whether running standalone
+        # or mounted under a prefix via FastAPI/Starlette app.mount().
+        scope_root = request.scope.get("root_path", "").rstrip("/")
+        effective_ws_path = f"{scope_root}/ws" if scope_root else ws_path
 
         tag_line_node = (
             A(
@@ -837,7 +896,7 @@ def register_routes(
                                 ),
                                 id="form",
                                 hx_ext="ws",
-                                ws_connect=ws_path,
+                                ws_connect=effective_ws_path,
                                 ws_send=True,
                                 hx_target="#cards",
                                 hx_swap="outerHTML",
@@ -864,6 +923,7 @@ def main(
     google_oauth_config: GoogleOAuthConfig | None = None,
     simple_auth_config: SimpleAuthConfig | None = None,
     auth_required: bool | None = None,
+    base_path: str = "",
 ):
     if responder is None:
         responder = EchoResponder()
@@ -892,7 +952,7 @@ def main(
         title=title,
         subtitle=subtitle,
         tag_line_href=tag_line_href,
-        base_path="",
+        base_path=base_path,
         google_oauth_config=oauth_cfg,
         simple_auth_config=simple_cfg,
         auth_required=auth_required,
