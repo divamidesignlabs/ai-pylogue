@@ -21,7 +21,7 @@
   background: transparent !important;
 }
 :root {
-  /* color-scheme: light; */
+  /* All color-scheme properties removed to prevent browser/system appearance override */
   --paper: #f9fafb;
   --paper-2: #f2f4f7;
   --ink: #f1f1f1;
