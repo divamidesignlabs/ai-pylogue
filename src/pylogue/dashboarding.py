@@ -107,21 +107,28 @@ def _is_missing_value(value) -> bool:
 
 
 def _replace_missing_with_unknown(values):
-    if not isinstance(values, list):
+    # Accept Python lists and numpy/pandas array-like objects (not strings or dicts)
+    if isinstance(values, (str, dict)) or not hasattr(values, '__iter__'):
         return values
     return ["Unknown" if _is_missing_value(v) else v for v in values]
 
 
 def _replace_missing_in_customdata(customdata):
-    if not isinstance(customdata, list):
+    # Accept Python lists and numpy/pandas array-like objects (not strings or dicts)
+    if isinstance(customdata, (str, dict)) or not hasattr(customdata, '__iter__'):
         return customdata
     fixed = []
     for row in customdata:
-        if isinstance(row, list):
+        if not isinstance(row, (str, dict)) and hasattr(row, '__iter__'):
             fixed.append(["Unknown" if _is_missing_value(cell) else cell for cell in row])
         else:
             fixed.append("Unknown" if _is_missing_value(row) else row)
     return fixed
+
+
+def _is_array_like(value) -> bool:
+    """Return True for list/numpy/pandas array-like objects (not strings or dicts)."""
+    return not isinstance(value, (str, dict)) and hasattr(value, '__iter__')
 
 
 def _normalize_trace_labels(trace: dict, trace_type: str):
@@ -131,18 +138,18 @@ def _normalize_trace_labels(trace: dict, trace_type: str):
 
     if trace_type in {"bar", "histogram", "waterfall", "funnel", "scatter", "scatter3d", "scattergeo", "scatterpolar", "scatterternary", "box", "violin"}:
         category_key = "y" if orientation == "h" else "x"
-        if isinstance(trace.get(category_key), list):
+        if _is_array_like(trace.get(category_key)):
             trace[category_key] = _replace_missing_with_unknown(trace[category_key])
 
     if trace_type in {"pie", "sunburst", "treemap", "icicle", "funnelarea"}:
-        if isinstance(trace.get("labels"), list):
+        if _is_array_like(trace.get("labels")):
             trace["labels"] = _replace_missing_with_unknown(trace["labels"])
-        if isinstance(trace.get("ids"), list):
+        if _is_array_like(trace.get("ids")):
             trace["ids"] = _replace_missing_with_unknown(trace["ids"])
-        if isinstance(trace.get("parents"), list):
+        if _is_array_like(trace.get("parents")):
             trace["parents"] = _replace_missing_with_unknown(trace["parents"])
 
-    if isinstance(trace.get("text"), list):
+    if _is_array_like(trace.get("text")):
         trace["text"] = _replace_missing_with_unknown(trace["text"])
 
     if "customdata" in trace:
@@ -166,7 +173,7 @@ def _humanize_field_name(label: str) -> str:
     return text[:1].upper() + text[1:]
 
 
-def _sanitize_hovertemplate(template: str) -> str:
+def _sanitize_hovertemplate(template: str, orientation: str = 'v') -> str:
     if not isinstance(template, str) or not template:
         return template
 
@@ -201,7 +208,12 @@ def _sanitize_hovertemplate(template: str) -> str:
 
     # Ensure numeric placeholders use one centralized compact format (K/M/B).
     # Do not force-format %{x}: in many charts x is categorical text (e.g., owner name).
-    text = re.sub(r"%\{(y|z|value)(:[^}]*)?\}", rf"%{{\1:{COMPACT_NUMBER_FORMAT}}}", text)
+    # Do not force-format %{y} for horizontal bars: y is the categorical axis there.
+    if orientation == 'h':
+        # For horizontal bars: only format z/value; y is categorical, x is numeric
+        text = re.sub(r"%\{(z|value)(:[^}]*)?\}", rf"%{{\1:{COMPACT_NUMBER_FORMAT}}}", text)
+    else:
+        text = re.sub(r"%\{(y|z|value)(:[^}]*)?\}", rf"%{{\1:{COMPACT_NUMBER_FORMAT}}}", text)
     # Ensure percentage placeholders use two decimals.
     text = re.sub(r"%\{percent(:[^}]*)?\}", rf"%{{percent:{PERCENT_FORMAT}}}", text)
     
@@ -371,9 +383,10 @@ def _set_default_hovertemplate(trace: dict, trace_type: str, trace_count: int = 
         trace_type: Type of trace (bar, scatter, etc.)
         trace_count: Total number of traces in the figure (for multi-series detection)
     """
+    orientation = str(trace.get("orientation", "v")).lower()
     if trace.get("hovertemplate"):
         # Sanitize existing hovertemplate and add trace name if needed
-        existing = _sanitize_hovertemplate(trace["hovertemplate"])
+        existing = _sanitize_hovertemplate(trace["hovertemplate"], orientation=orientation)
         # Add trace name for multi-trace charts if not already present
         if trace_count > 1 and "%{fullData.name}" not in existing and trace.get("name"):
             # Insert trace name at the beginning
@@ -395,9 +408,16 @@ def _set_default_hovertemplate(trace: dict, trace_type: str, trace_count: int = 
         )
         return
     if trace_type in {"bar", "histogram", "waterfall", "funnel", "scatter", "scatter3d", "scattergeo", "scatterpolar", "scatterternary", "box", "violin"}:
-        trace["hovertemplate"] = (
-            f"{trace_name_prefix}Category: %{{x}}<br>{value_label}: %{{y:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
-        )
+        if orientation == 'h':
+            # Horizontal: x is the numeric measure, y is the categorical label
+            trace["hovertemplate"] = (
+                f"{trace_name_prefix}Category: %{{y}}<br>{value_label}: %{{x:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
+            )
+        else:
+            # Vertical (default): x is the categorical label, y is the numeric measure
+            trace["hovertemplate"] = (
+                f"{trace_name_prefix}Category: %{{x}}<br>{value_label}: %{{y:{COMPACT_NUMBER_FORMAT}}}<extra></extra>"
+            )
         return
 
 
