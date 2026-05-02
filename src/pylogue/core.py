@@ -678,6 +678,12 @@ def register_ws_routes(
                 else:
                     cards[-1]["answer"] = "[Stopped]"
                 await send(render_assistant_update(cards[-1]))
+            except Exception as exc:
+                _LOG.exception("Responder error")
+                error_msg = f"⚠ Error: {exc}"
+                if cards:
+                    cards[-1]["answer"] = error_msg
+                    await send(render_assistant_update(cards[-1]))
             finally:
                 await send(render_chat_data(cards))
                 await send(render_chat_export(cards, responder=session_responder))
